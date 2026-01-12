@@ -519,3 +519,6 @@ Desktop.ini
 
 repo/*
 git_tree.html
+
+*.png
+reports/

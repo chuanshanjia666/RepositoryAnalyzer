@@ -1,3 +1,4 @@
 GitPython
 PyGitHub
 graphviz
+matplotlib
