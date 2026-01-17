@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from collections import Counter
 
+# 解决中文显示问题，兼容所有系统，标准配置
 plt.rcParams['font.sans-serif'] = ['Source Han Sans CN', 'Arial Unicode MS', 'SimHei', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -265,6 +266,141 @@ def draw_release_timeline(repo, output_dir="stats", prefix=""):
     plt.close()
     print(f"已生成统计图: {path}")
 
+
+def draw_code_ins_del_trend(repo, commits, output_dir="stats", prefix=""):
+    """
+    统计并绘制每次提交的代码新增/删除行数趋势图
+    功能说明: 分析项目迭代过程中代码增减规律，反映功能迭代/重构的节奏
+    :param repo: git仓库对象
+    :param commits: 提交记录列表
+    :param output_dir: 输出目录
+    :param prefix: 文件名前缀
+    """
+    insertions_list = []
+    deletions_list = []
+    commit_dates = []
+    # 遍历提交记录，提取每行提交的增删行数
+    for commit in repo.iter_commits('--all', max_count=len(commits), topo_order=True):
+        stats = commit.stats.total
+        insertions_list.append(stats['insertions'])
+        deletions_list.append(stats['deletions'])
+        commit_dates.append(datetime.fromtimestamp(commit.authored_date))
+    # 反转数据保证时间正序
+    insertions_list = insertions_list[::-1]
+    deletions_list = deletions_list[::-1]
+    commit_dates = commit_dates[::-1]
+    
+    plt.figure(figsize=(12, 6))
+    plt.plot(commit_dates, insertions_list, marker='.', color='#2E8B57', label='新增代码行数', linewidth=1.5)
+    plt.plot(commit_dates, deletions_list, marker='.', color='#DC143C', label='删除代码行数', linewidth=1.5)
+    plt.fill_between(commit_dates, insertions_list, alpha=0.2, color='#2E8B57')
+    plt.fill_between(commit_dates, deletions_list, alpha=0.2, color='#DC143C')
+    plt.title('项目提交代码新增/删除行数趋势分析')
+    plt.xlabel('提交日期')
+    plt.ylabel('代码行数')
+    plt.legend(loc='upper right')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    path = get_save_path('stats_ins_del_trend.png', output_dir, prefix)
+    plt.savefig(path)
+    plt.close()
+    print(f"已生成统计图: {path}")
+
+def draw_cn_keyword_distribution(commits, output_dir="stats", prefix=""):
+    """
+    统计提交信息的中文高频开发关键词分布(补充英文关键词的不足)
+    功能说明: 适配中文开源项目提交习惯，分析开发行为类型占比，完善关键词分析维度
+    :param commits: 提交记录列表
+    :param output_dir: 输出目录
+    :param prefix: 文件名前缀
+    """
+    # 定义中文开发高频关键词，覆盖主流提交场景，无遗漏
+    cn_keywords = {
+        '新增/添加': 0,
+        '修改/更新': 0,
+        '修复/修补/Bug': 0,
+        '优化/重构': 0,
+        '其他提交': 0
+    }
+    # 遍历所有提交信息进行关键词匹配
+    for commit_info in commits:
+        msg = commit_info['message']
+        if any(word in msg for word in ['新增', '添加']):
+            cn_keywords['新增/添加'] += 1
+        elif any(word in msg for word in ['修改', '更新']):
+            cn_keywords['修改/更新'] += 1
+        elif any(word in msg for word in ['修复', '修补', 'bug', 'Bug']):
+            cn_keywords['修复/修补/Bug'] += 1
+        elif any(word in msg for word in ['优化', '重构', '调整']):
+            cn_keywords['优化/重构'] += 1
+        else:
+            cn_keywords['其他提交'] += 1
+    # 绘制饼图，配色美观，标注百分比
+    plt.figure(figsize=(8, 8))
+    plt.pie(cn_keywords.values(), labels=cn_keywords.keys(), autopct='%1.1f%%',
+            colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'], startangle=90)
+    plt.title('提交信息-中文高频开发关键词分布')
+    path = get_save_path('stats_cn_keywords.png', output_dir, prefix)
+    plt.savefig(path)
+    plt.close()
+    print(f"已生成统计图: {path}")
+
+def draw_author_contribution_ratio(commits, output_dir="stats", prefix=""):
+    """
+    统计核心贡献者提交量占比饼图(补充提交次数排行的深度分析)
+    功能说明: 分析项目的核心开发人员构成，反映团队贡献权重与项目维护模式
+    :param commits: 提交记录列表
+    :param output_dir: 输出目录
+    :param prefix: 文件名前缀
+    """
+    authors = [commit['author'] for commit in commits]
+    author_counts = Counter(authors)
+    # 取提交量前8的核心贡献者，其余归为"其他贡献者"，保证图表简洁美观
+    top_authors = author_counts.most_common(8)
+    other_count = sum(author_counts.values()) - sum([count for _, count in top_authors])
+    
+    # 组装最终统计数据
+    contribution_data = list(top_authors)
+    if other_count > 0:
+        contribution_data.append(('其他贡献者', other_count))
+    
+    names, counts = zip(*contribution_data)
+    plt.figure(figsize=(9, 9))
+    plt.pie(counts, labels=names, autopct='%1.1f%%',
+            colors=plt.cm.Set3(range(len(names))), startangle=90)
+    plt.title('项目核心贡献者提交量占比分析')
+    path = get_save_path('stats_author_ratio.png', output_dir, prefix)
+    plt.savefig(path)
+    plt.close()
+    print(f"已生成统计图: {path}")
+
+def draw_modify_file_count_distribution(repo, commits, output_dir="stats", prefix=""):
+    """
+    统计每次提交的改动文件数量分布直方图
+    功能说明: 分析项目开发粒度，判断是小步迭代(少量文件修改)还是大批量重构(大量文件修改)
+    :param repo: git仓库对象
+    :param commits: 提交记录列表
+    :param output_dir: 输出目录
+    :param prefix: 文件名前缀
+    """
+    modify_file_counts = []
+    # 遍历提交记录，统计每次提交修改的文件数量
+    for commit in repo.iter_commits('--all', max_count=len(commits), topo_order=True):
+        file_count = len(commit.stats.files)
+        modify_file_counts.append(file_count)
+    
+    plt.figure(figsize=(11, 6))
+    plt.hist(modify_file_counts, bins=15, color='#74B9FF', edgecolor='black', alpha=0.8)
+    plt.title('单次提交-改动文件数量分布情况')
+    plt.xlabel('每次提交修改的文件数')
+    plt.ylabel('该类型提交的出现频次')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    path = get_save_path('stats_modify_file_count.png', output_dir, prefix)
+    plt.savefig(path)
+    plt.close()
+    print(f"已生成统计图: {path}")
+
 def run_all_analysis(repo, commits, output_dir="stats", prefix=""):
     draw_author_stats(commits, output_dir, prefix)
     draw_monthly_activity(commits, output_dir, prefix)
@@ -280,3 +416,7 @@ def run_all_analysis(repo, commits, output_dir="stats", prefix=""):
     draw_weekly_velocity(commits, output_dir, prefix)
     draw_loc_evolution(repo, 300, output_dir, prefix)
     draw_release_timeline(repo, output_dir, prefix)
+    draw_code_ins_del_trend(repo, commits, output_dir, prefix)
+    draw_cn_keyword_distribution(commits, output_dir, prefix)
+    draw_author_contribution_ratio(commits, output_dir, prefix)
+    draw_modify_file_count_distribution(repo, commits, output_dir, prefix)
