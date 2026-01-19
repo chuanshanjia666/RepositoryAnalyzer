@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+import subprocess
 from datetime import datetime
 from collections import Counter
 
@@ -401,7 +402,72 @@ def draw_modify_file_count_distribution(repo, commits, output_dir="stats", prefi
     plt.close()
     print(f"已生成统计图: {path}")
 
+def analyze_static_code(repo_path, output_dir="reports", prefix=""):
+    """
+    对目标仓库进行静态代码分析 (Pylint, Bandit, Radon)
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    print(f"正在对 {repo_path} 进行静态分析...")
+
+    # 1. Pylint (代码质量/风格)
+    pylint_report = os.path.join(output_dir, f"{prefix}pylint_report.txt")
+    print(f"运行 Pylint...")
+    with open(pylint_report, "w") as f:
+        # 限制只分析 COMTool 核心目录，避免分析第三方库或测试过于耗时
+        subprocess.run(["pylint", os.path.join(repo_path, "COMTool")], stdout=f, stderr=subprocess.STDOUT)
+
+    # 2. Bandit (安全审计)
+    bandit_report = os.path.join(output_dir, f"{prefix}bandit_report.txt")
+    print(f"运行 Bandit 安全扫描...")
+    subprocess.run(["bandit", "-r", os.path.join(repo_path, "COMTool"), "-f", "txt", "-o", bandit_report])
+
+    # 3. Radon (复杂度分析)
+    radon_report = os.path.join(output_dir, f"{prefix}radon_complexity.txt")
+    print(f"运行 Radon 复杂度分析...")
+    with open(radon_report, "w") as f:
+        subprocess.run(["radon", "cc", "-s", os.path.join(repo_path, "COMTool")], stdout=f)
+
+    print(f"静态分析报告已生成在: {output_dir}")
+
+def analyze_dynamic_code(repo_path, output_dir="reports", prefix=""):
+    """
+    对目标仓库进行动态分析 (Unit Tests & Coverage)
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    print(f"正在对 {repo_path} 进行动态分析...")
+
+    # 运行 pytest 并生成覆盖率报告
+    # 注意: COMTool 可能需要安装其自身的依赖才能运行测试
+    coverage_data = os.path.join(output_dir, ".coverage")
+    coverage_report = os.path.join(output_dir, f"{prefix}coverage_report.txt")
+    
+    # 尝试运行测试，即使失败也要获取部分覆盖率或错误信息
+    env = os.environ.copy()
+    env["PYTHONPATH"] = repo_path # 确保能导入模块
+    
+    print(f"运行 Pytest 与 Coverage...")
+    # 使用 pytest-cov 运行测试
+    result = subprocess.run([
+        "pytest", 
+        "--cov=" + os.path.join(repo_path, "COMTool"),
+        "--cov-report=term-missing",
+        repo_path
+    ], capture_output=True, text=True, env=env)
+
+    with open(coverage_report, "w") as f:
+        f.write(result.stdout)
+        if result.stderr:
+            f.write("\n--- ERRORS ---\n")
+            f.write(result.stderr)
+
+    print(f"动态分析报告已生成在: {output_dir}")
+
 def run_all_analysis(repo, commits, output_dir="stats", prefix=""):
+    # 基础 Git 统计分析
     draw_author_stats(commits, output_dir, prefix)
     draw_monthly_activity(commits, output_dir, prefix)
     draw_keyword_distribution(commits, output_dir, prefix)
@@ -420,3 +486,7 @@ def run_all_analysis(repo, commits, output_dir="stats", prefix=""):
     draw_cn_keyword_distribution(commits, output_dir, prefix)
     draw_author_contribution_ratio(commits, output_dir, prefix)
     draw_modify_file_count_distribution(repo, commits, output_dir, prefix)
+    
+    # 新增：代码静态与动态分析
+    analyze_static_code(repo.working_dir, output_dir, prefix)
+    analyze_dynamic_code(repo.working_dir, output_dir, prefix)

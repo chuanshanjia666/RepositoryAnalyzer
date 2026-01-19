@@ -3,6 +3,7 @@ import json
 import git
 from datetime import datetime
 from html_generator import generate_git_tree_html
+from analysis_visualizer import run_visualizations
 import analyze
 
 GIT_URL = "https://github.com/Neutree/COMTool.git"
@@ -33,5 +34,8 @@ def get_git_history(repo, limit=100):
 if __name__ == "__main__":
     repo = clone_repo(GIT_URL, REPO_PATH)
     commits = get_git_history(repo, 300)
-    analyze.run_all_analysis(repo, commits, output_dir="reports", prefix="comtool_")
+    output_dir = "reports"
+    prefix = "comtool_"
+    analyze.run_all_analysis(repo, commits, output_dir=output_dir, prefix=prefix)
+    run_visualizations(output_dir, prefix=prefix)
     generate_git_tree_html(commits, GIT_URL)
