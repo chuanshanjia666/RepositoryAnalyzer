@@ -1,0 +1,9 @@
+GitPython
+PyGitHub
+graphviz
+matplotlib
+pylint
+bandit
+radon
+pytest
+pytest-cov
