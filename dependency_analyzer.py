@@ -4,9 +4,9 @@ import subprocess
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-# 解决中文显示
-plt.rcParams["font.sans-serif"] = ["SimHei", "Microsoft YaHei"]
-plt.rcParams["axes.unicode_minus"] = False
+plt.rcParams['font.sans-serif'] = ['Source Han Sans CN', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', 'SimHei', 'DejaVu Sans']
+plt.rcParams['axes.unicode_minus'] = False
+
 
 class DependencyAnalyzer:
     def __init__(self, repo_path, output_dir):
