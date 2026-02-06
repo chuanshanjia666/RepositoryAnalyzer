@@ -1,21 +1,21 @@
-\chapter{基于gitgraph的git提交历史可视化}
+\chapter{git仓库分析}
 \label{chap01}
-
+\section{基于gitgraph的git提交历史可视化}
 本章详细介绍如何使用 GitGraph.js 库实现 Git 提交历史的可视化展示。通过分析 Git 仓库的提交数据，生成直观的图形化界面，帮助开发者更好地理解项目的发展历史和分支结构。
 
-\section{技术架构设计}
+\subsection{技术架构设计}
 
-\subsection{GitGraph.js 核心特性}
+\subsubsection{GitGraph.js 核心特性}
 
 GitGraph.js 是一个基于 HTML5 Canvas 的 JavaScript 库，专门用于绘制 Git 图形。该库具备多分支支持能力，能够准确展示复杂的 Git 分支结构，包括分支的创建、合并、分叉等各种操作历史。库提供了丰富的交互式界面功能，支持用户通过鼠标滚轮进行缩放控制，可以拖拽浏览图形的不同部分，让开发者能够从各个角度详细查看提交历史。在样式配置方面，GitGraph.js 提供了高度自定义的选项，允许开发者根据需求调整颜色、布局、字体等各种视觉元素。此外，该库采用响应式设计原则，能够自动适配不同屏幕尺寸，确保在各种设备上都能提供良好的用户体验。
 
-\subsection{系统架构}
+\subsubsection{系统架构}
 
 整个可视化系统采用清晰的三层架构设计。数据层作为基础层，通过 GitPython 库与 Git 仓库进行深度交互，解析并提取详细的提交信息，包括提交哈希、作者信息、时间戳、父提交关系以及分支标签等核心数据。处理层承担着承上启下的关键角色，Python 脚本不仅对原始 Git 数据进行结构化处理和逻辑分析，还需要将这些数据注入到精心设计的 HTML 模板中，同时集成 GitGraph.js 的配置参数和样式设置。展示层作为最上层，最终通过现代浏览器强大的渲染能力，将抽象的 Git 历史数据转化为直观的可视化图形界面，用户可以清晰地看到分支的创建、合并、分叉等复杂操作的历史轨迹。
 
-\section{核心实现}
+\subsection{核心实现}
 
-\subsection{HTML 模板生成}
+\subsubsection{HTML 模板生成}
 
 主要实现在 \texttt{html\_generator.py} 文件中，核心函数 \texttt{generate\_git\_tree\_html} 负责生成完整的 HTML 页面：
 
@@ -38,15 +38,15 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
     """
 \end{verbatim}
 
-\subsection{样式配置}
+\subsubsection{样式配置}
 
 为了提升用户体验，系统采用 Metro 风格的视觉设计，在色彩方案方面使用 Material Design 色彩体系，提供了 10 种不同的分支颜色，确保各个分支能够清晰区分。在布局优化方面，系统采用垂直反向布局方式，将最新的提交显示在顶部，这样用户可以直观地看到项目的最新进展。字体设置充分考虑了中英文混合显示的需求，优先使用 Consolas 和微软雅黑字体，既保证了代码的可读性，又确保了中文字符的美观显示。此外，系统还添加了柔和的阴影效果，通过微妙的层次感提升整体视觉体验，让图形界面更加立体和现代化。
 
-\subsection{分支管理算法}
+\subsubsection{分支管理算法}
 
 系统实现了智能的分支管理算法，能够准确处理以下场景：
 
-\subsubsection{主干分支处理}
+\paragraph{主干分支处理}
 
 \begin{verbatim}
 const main = gitgraph.branch({
@@ -57,7 +57,7 @@ branches["main"] = main;
 branchToLastCommit.set(main, null);
 \end{verbatim}
 
-\subsubsection{分支创建与切换}
+\paragraph{分支创建与切换}
 
 当检测到新的分支引用时，系统会自动创建对应的分支：
 
@@ -77,7 +77,7 @@ c.refs.forEach(ref => {
 });
 \end{verbatim}
 
-\subsubsection{合并操作处理}
+\paragraph{合并操作处理}
 
 对于合并提交（包含多个父提交），系统会智能识别并执行合并操作：
 
@@ -96,45 +96,21 @@ if (c.parents.length > 1) {
 }
 \end{verbatim}
 
-\section{功能特性}
+\subsection{功能特性}
 
-\subsection{提交信息展示}
+\subsubsection{提交信息展示}
 
 每个提交节点都包含丰富的信息展示，在提交哈希方面显示完整的 SHA-1 哈希值，方便开发者进行精确的定位和查找。提交信息部分则显示详细的提交说明文字，让开发者能够快速了解每次提交的具体内容和目的。作者信息包含了作者姓名和提交时间，为团队协作提供了必要的时间线和责任人信息。在视觉标识方面，系统采用圆点表示提交节点，并通过不同颜色区分各个分支，使得复杂的 Git 历史结构一目了然。
 
-\subsection{交互功能}
+\subsubsection{交互功能}
 
 系统提供了丰富的交互功能，在缩放控制方面支持鼠标滚轮缩放图形，用户可以根据需要放大查看细节或缩小查看整体结构。拖拽浏览功能允许用户拖拽查看图形的不同部分，即使对于包含大量提交历史的项目也能轻松导航。分支标签功能清晰显示各分支名称，帮助用户快速识别和定位不同的开发线路。响应式适配机制确保图形能够自动适应容器大小，无论是在大型显示器还是小型设备上都能够提供最佳的视觉效果。
 
-\section{性能优化}
+\subsection{性能优化}
 
-\subsection{数据处理优化}
+\subsubsection{数据处理优化}
 
 在数据处理方面，系统采用批量处理策略，一次性处理所有提交数据，避免了重复计算带来的性能损耗。内存管理方面使用 Map 数据结构来优化查找性能，确保在处理大量提交数据时仍能保持高效的查询速度。引用缓存机制则通过缓存分支和提交的映射关系，减少了重复的查找操作，显著提升了整体处理效率。
-
-\subsection{渲染优化}
-
-渲染优化方面，系统充分利用 HTML5 Canvas 技术提供硬件加速，确保图形渲染的流畅性和高性能。布局算法经过精心优化，能够有效避免分支交叉和重叠问题，即使在复杂的 Git 历史结构中也能保持清晰的视觉效果。样式预编译技术则通过提前编译 CSS 样式，减少了运行时的计算开销，进一步提升了渲染速度和用户体验。
-
-\section{使用示例}
-
-\subsection{基本使用}
-
-\begin{verbatim}
-commits = [
-    {
-        "hash": "abc123",
-        "hashFull": "abc123def456...",
-        "message": "feat: 添加新功能",
-        "author": "张三",
-        "date": "2024-01-01",
-        "parents": [],
-        "refs": ["HEAD", "refs/heads/main"]
-    }
-]
-
-generate_git_tree_html(commits, "https://github.com/user/repo")
-\end{verbatim}
 
 \subsection{输出结果}
 
@@ -147,6 +123,3 @@ generate_git_tree_html(commits, "https://github.com/user/repo")
 \label{fig:git_history}
 \end{figure}
 
-\section{本章小结}
-
-本章详细介绍了基于 GitGraph.js 的 Git 提交历史可视化实现。通过 Python 后端处理和前端图形渲染的结合，提供了一个功能完整、性能优良的 Git 历史可视化解决方案。该系统不仅能够准确展示复杂的 Git 分支结构，还提供了丰富的交互功能和优雅的视觉体验。
