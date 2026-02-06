@@ -8,7 +8,7 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
 <head>
     <meta charset="UTF-8">
     <title>Git Tree Visualization</title>
-    <script src="https://cdn.jsdelivr.net/npm/@gitgraph/js"></script>
+    <script src="https://unpkg.com/@gitgraph/js/lib/gitgraph.umd.js"></script>
     <style>
         body {{
             font-family: 'Consolas', 'Microsoft YaHei', 'Source Han Sans SC', sans-serif;
