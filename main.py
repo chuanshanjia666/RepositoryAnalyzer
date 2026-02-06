@@ -10,12 +10,17 @@ import analyze
 from code_analyzer import AdvancedRadonAnalyzer
 from dependency_analyzer import DependencyAnalyzer
 from vulnerability_scanner import AdvancedVulnerabilityScanner
+from github_issue_analyzer import GitHubIssueAnalyzer
 
 # ========== 全局配置（统一规范） ==========
 GIT_URL = "https://github.com/Neutree/COMTool.git"
 REPO_PATH = "./repo"
 REPORT_DIR = "reports"
 PREFIX = "comtool_"
+
+# GitHub配置（可选）
+GITHUB_REPO = "Neutree/COMTool"  # 格式: owner/repo
+GITHUB_TOKEN = None  # 可选: GitHub token，用于提高API限制
 
 def clone_repo(url, path):
     """克隆Git仓库（若不存在），增加异常处理"""
@@ -91,7 +96,54 @@ if __name__ == "__main__":
     bandit_results = vuln_scanner.advanced_bandit_scan()
     vuln_scanner.visualize_vulns(bandit_results)
 
+    # 4.4 GitHub安全issue分析
+    print("\n🐙 分析GitHub安全issues...")
+    if GITHUB_REPO:
+        try:
+            # 解析owner和repo
+            owner, repo = GITHUB_REPO.split('/')
+            github_analyzer = GitHubIssueAnalyzer(
+                repo_owner=owner,
+                repo_name=repo,
+                output_dir=REPORT_DIR,
+                token=GITHUB_TOKEN
+            )
+
+            # 获取并分析issues
+            print(f"   获取 {GITHUB_REPO} 的issues...")
+            issues = github_analyzer.get_issues(days_back=180)  # 最近6个月
+
+            if issues:
+                analysis_results = github_analyzer.analyze_security_issues(issues)
+                trend_data = github_analyzer.analyze_issue_trends(issues)
+                github_analyzer.save_results(analysis_results, trend_data)
+                github_analyzer.visualize_results(analysis_results, trend_data)
+
+                # 显示安全issue摘要
+                security_count = len(analysis_results['security_issues'])
+                if security_count > 0:
+                    print(f"   ⚠️  发现 {security_count} 个安全相关的issues")
+                    for severity, count in analysis_results['severity_count'].items():
+                        if count > 0:
+                            print(f"      {severity}: {count} 个")
+                else:
+                    print("   ✅ 未发现安全相关的issues")
+            else:
+                print("   ⚠️  未获取到GitHub issues")
+
+        except Exception as e:
+            print(f"   ❌ GitHub分析失败: {str(e)}")
+    else:
+        print("   ⚠️  未配置GitHub仓库，跳过issue分析")
+
     # 最终提示
     print("\n🎉 所有分析完成！")
     print(f"📁 报告目录：{os.path.abspath(REPORT_DIR)}")
     print(f"🌐 Git可视化页面：{os.path.abspath('git_tree.html')}")
+
+    # 显示生成的安全报告
+    security_files = [f for f in os.listdir(REPORT_DIR) if 'security' in f or 'vulnerability' in f or 'github' in f]
+    if security_files:
+        print(f"\n🔒 安全分析报告:")
+        for file in security_files:
+            print(f"   - {file}")
