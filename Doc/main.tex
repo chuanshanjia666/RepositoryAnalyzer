@@ -1,90 +1,132 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %   大连理工大学硕士论文模板 ―― 主文件 main.tex
-%   版本：0.71
-%   最后更新：2010-12-22
-%   编译环境：Windows XP SP3 + CTeXLive 2009 + WinEdt 5.6
+%   版本：1.0
+%   最后更新：2024-01-01
+%   编译环境：XeLaTeX + biblatex + biber
 %   欢迎使用，如有任何意见和建议请发送邮件至 yuri_1985@163.com，感谢您的支持！
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\documentclass[12pt,a4paper,openany,oneside]{book}
+\documentclass[UTF8]{dlutthesis}
 
-% 引用的宏包
-\input{setup/package.tex}
+% 定义所有的图片文件在 figures 子目录下
+\graphicspath{{figures/}}
+
+% 参考文献数据库
+\addbibresource{sections/reference.bib}
+
+% 论文信息设置
+\ctitle{大连理工大学学位论文 \\ XeLaTeX 模板设计与实现}
+\cdegree{硕士学位论文}
+\cauthor{作者姓名}
+\cauthorno{2020000000}
+\csupervisor{导师姓名\quad 教授}
+\csubject{专业名称}
+\cschool{学院（学部）名称}
+\creviewer{评阅教师}
+\cdate{2024年6月}
+\cabstract{
+    这里是中文摘要内容。本论文主要介绍了大连理工大学学位论文XeLaTeX模板的设计与实现过程。
+    通过分析现有模板的不足，结合现代LaTeX技术，重新设计了一个基于.cls文档类的模板，
+    提高了模板的易用性、可维护性和编译效率。
+
+    本文首先回顾了LaTeX在学术写作中的应用现状，然后详细阐述了模板的设计思路和实现细节，
+    包括文档类结构、格式设置、宏包集成等方面。最后，通过对比测试验证了新模板的优越性。
+}
+\ckeywords{XeLaTeX；学位论文模板；文档类；自动化排版}
+
+\etitle{Design and Implementation of XeLaTeX Template for Dalian University of Technology}
+\eabstract{
+    This is the English abstract. This thesis mainly introduces the design and implementation
+    of the XeLaTeX template for Dalian University of Technology degree thesis. Through analyzing
+    the shortcomings of existing templates and combining modern LaTeX technology, a new template
+    based on .cls document class is redesigned to improve the usability, maintainability and
+    compilation efficiency of the template.
+
+    This paper first reviews the current application status of LaTeX in academic writing,
+    then elaborates the design ideas and implementation details of the template, including
+    document class structure, format settings, package integration, etc. Finally, the superiority
+    of the new template is verified through comparative testing.
+}
+\ekeywords{XeLaTeX; thesis template; document class; automated typesetting}
 
 % 文档正文
 \begin{document}
-	
-	% 定义所有的图片文件在 figures 子目录下
-	\graphicspath{{figures/}}
-		
-		% 文本格式定义
-		\input{setup/format.tex}
-		
-		% 前言
-		\frontmatter
-		\pagenumbering{Roman}
-		\input{preface/cover.tex}       % 封面
-		%\originality                    % 独创性
-%		\makeabstract
-		
-		% 设置目录字体和行间距
-		\defaultmenufont
-		% 目录
-		\tableofcontents
-		\cleardoublepage
-		% 插图目录
-		%\listoffigures
-		% 表格目录
-		%\listoftables
-		\cleardoublepage
-		
-		\defaultfont
-		\mainmatter
-		
-		% 正文章节
-		\defaultfont
-		\renewcommand{\thefootnote}{\arabic{footnote}}
-		\include{body/chap00}
-		\include{body/chap01}
-		\include{body/chap02}
-		\include{body/chap03}
-		
-		% 结论
-%		\include{body/conclusion}
-		\cleardoublepage
-		%\backmatter
-		
-		% 参考文献（使用 biblatex）
-		\wuhao
-		\phantomsection
-		\addcontentsline{toc}{chapter}{参考文献}
-		\printbibliography[title=参考文献]
-		\cleardoublepage
-		
-		%附录
-		\defaultfont
-		\begin{appendix}
-			\input{appendix/chapA}
-		\end{appendix}
-		\cleardoublepage
-		
-		\defaultfont
-		%发表的文章列表
-		%\include{appendix/publications}
-		\cleardoublepage
-		%致谢
-		\include{appendix/acknowledgements}
-		\cleardoublepage
-		%授权书
-		%\chapter*{}
-		%\addcontentsline{toc}{chapter}{大连理工大学学位论文版权使用授权书}
-		%\renewcommand{\baselinestretch}{1.61}
-		%\vspace{-0.48cm}
-		%\authorization
-		%\cleardoublepage
-		
+
+% 前言
+\frontmatter
+\pagenumbering{Roman}
+
+% 封面
+\makecover
+
+% 独创性声明
+%\originality
+
+% 摘要
+\makeabstract
+
+% 设置目录字体和行间距
+\defaultmenufont
+
+% 目录
+\tableofcontents
+\cleardoublepage
+
+% 插图目录
+%\listoffigures
+
+% 表格目录
+%\listoftables
+
+\cleardoublepage
+\defaultfont
+\mainmatter
+
+% 正文章节
+\defaultfont
+\renewcommand{\thefootnote}{\arabic{footnote}}
+\include{sections/0.chap00}
+\include{sections/1.chap01}
+\include{sections/2.chap02}
+\include{sections/3.chap03}
+
+% 结论
+%\include{sections/4.conclusion}
+\cleardoublepage
+
+% 参考文献（使用 biblatex）
+\wuhao
+\phantomsection
+\addcontentsline{toc}{chapter}{参考文献}
+\printbibliography[title=参考文献]
+\cleardoublepage
+
+%附录
+\defaultfont
+\begin{appendix}
+    \input{sections/6.chapA}
+\end{appendix}
+\cleardoublepage
+
+\defaultfont
+%发表的文章列表
+%\include{sections/8.publications}
+\cleardoublepage
+
+%致谢
+\include{sections/7.acknowledgements}
+\cleardoublepage
+
+%授权书
+%\chapter*{}
+%\addcontentsline{toc}{chapter}{大连理工大学学位论文版权使用授权书}
+%\renewcommand{\baselinestretch}{1.61}
+%\vspace{-0.48cm}
+%\authorization
+%\cleardoublepage
+
 \end{document}
 
 %%%%%%%%%%%%%%%%%% End of the file  %%%%%%%%%%%%%%%%%%%%%%%%

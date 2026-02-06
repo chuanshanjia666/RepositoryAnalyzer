@@ -1,16 +1,77 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   大连理工大学硕士论文模板 ―― 格式文件 format.tex
-%   版本：0.71
-%   最后更新：2010-12-22
-%   编译环境：Windows XP SP3 + CTeXLive 2009 + WinEdt 5.6
+%   大连理工大学硕士论文模板 —— 文档类文件 dlutthesis.cls
+%   版本：1.0
+%   最后更新：2024-01-01
+%   编译环境：XeLaTeX + biblatex + biber
 %   欢迎使用，如有任何意见和建议请发送邮件至 yuri_1985@163.com，感谢您的支持！
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesClass{dlutthesis}[2024/01/01 v1.0 Dalian University of Technology Thesis Template]
+
+% 基础文档类
+\LoadClass[12pt,a4paper,openany,oneside]{book}
+
+% 版面控制
+\RequirePackage[body={16.1true cm,22.0true cm}]{geometry}   %论文版芯161mm×220mm（不包括页眉页脚）
+\RequirePackage{indentfirst}    % 首行缩进宏包
+\RequirePackage[sf]{titlesec}   % 控制标题的宏包
+\RequirePackage{titletoc}       % 控制目录的宏包
+\RequirePackage{fancyhdr}       % 自定义页眉页脚
+\RequirePackage{fancyref}       % 引用链接属性
+%\RequirePackage{cite}           % 支持引用的宏包（与 natbib 冲突，已禁用）
+\RequirePackage[perpage,symbol]{footmisc}   % 脚注控制
+\RequirePackage{layouts}        % 打印当前页面格式的宏包
+\RequirePackage{paralist}       % 一种换行不缩进的列表格式，用 asparaenum 或者 inparaenum 环境
+%\RequirePackage[numbers]{natbib}         % 参考文献（已替换为 biblatex）
+\RequirePackage{fancyvrb}       % 原样输出
+%\RequirePackage{listings}   % 粘贴源代码
+
+% 字体
+\RequirePackage[UTF8]{ctex}        % 中文支持宏包，使用 UTF-8 编码
+\RequirePackage{amsmath}    % AMS 宏包，包含一些常用的数学字体和符号，
+\RequirePackage{amssymb}    % 如果你引用一些不常见的字体宏包可能会与此发生冲突，请考虑略去。
+\RequirePackage{mathrsfs}   % 一种常用于定义泛函算子的花体字母，只有大写。
+\RequirePackage[amsmath,thmmarks,hyperref]{ntheorem} % 定理类环境宏包，其中 amsmath 选项用来兼容 AMS的宏包
+\RequirePackage{type1cm}    % 控制字体的大小
+\RequirePackage{bm}         % 处理数学公式中的黑斜体的宏包
+%\RequirePackage{fourier}    % 一种和Times类似的字体
+%\RequirePackage{txfonts}   % 如果你希望和 Word 的默认值保持一致，请使用此宏包（XeLaTeX 下不兼容）
+\RequirePackage{helvet}
+
+% 图形
+\RequirePackage{graphicx}   % 这里引用 graphicx 宏包时没有图形驱动选项，所以请在引用图片时务必给出后缀名
+\RequirePackage{subfigure}  % 插入子图形
+\RequirePackage{color}      % 支持彩色
+\RequirePackage[below]{placeins}    % 浮动图形控制宏包
+%\RequirePackage{picinpar}   % 图文混排用宏包
+%\RequirePackage{floatflt}  % 图文混排用宏包
+\RequirePackage{rotating}   % 图形和表格的控制
+\RequirePackage[subfigure]{ccaption}    % 浮动图形和表格标题样式，支持插图表格的双语标题
+\RequirePackage{setspace}   % 定制表格和图形的多行标题行距！！
+
+% 其他
+\RequirePackage{calc}   % 在 tex 文件中具有一些计算功能，主要用在页面控制。
+%\RequirePackage{ccmap}      % 使pdfLatex生成的文件支持复制等（XeLaTeX 不需要此包）
+\RequirePackage[unicode,
+            bookmarksnumbered=true,
+            bookmarksopen=true,
+            colorlinks=true,
+            citecolor=blue,
+            linkcolor=black,
+            anchorcolor=green,
+            urlcolor=blue,
+            breaklinks=true
+            ]{hyperref} % 生成有书签和超链接的 pdf，使用 unicode 支持 UTF-8
+
+% 参考文献（使用现代的 biblatex + biber 方案）
+\RequirePackage[backend=biber,style=gb7714-2015]{biblatex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 页面设置
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A4 纸张
 \setlength{\paperwidth}{21.0cm}
 \setlength{\paperheight}{29.7cm}
@@ -42,9 +103,9 @@
 \renewcommand{\bottomfraction}{0.65}
 \renewcommand{\floatpagefraction}{0.60}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 字体字号定义
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 中文段落缩进和 ~ 字符替换
 %\CJKindent                              % 首行缩进两个汉字（ctex 包自动处理）
 \sloppy
@@ -89,9 +150,10 @@
     \newcommand\fixedunderlinecenter[2][1cm]{\underline{\hb@xt@ #1{\hss#2\hss}}}
     \newcommand\fixedunderlineright[2][1cm]{\underline{\hb@xt@ #1{\hss#2}}}
 \makeatother
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 标题相关
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 定义、定理等环境
 \theoremstyle{plain}
 \theoremheaderfont{\hei\bf}
@@ -116,9 +178,9 @@
 \renewcommand\listtablename{\hfill 表~格~目~录 \hfill}
 \renewcommand{\bibname}{\hfill 参~考~文~献 \hfill}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 段落章节
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setcounter{secnumdepth}{4}
 \setcounter{tocdepth}{4}
 % 设置章、节、小节、小小节的间距
@@ -141,9 +203,9 @@
 % 定义行距
 \renewcommand{\baselinestretch}{1.27}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 页眉和页脚 使用 fancyhdr 宏包
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand{\makeheadrule}{%
     \makebox[0pt][l]{\rule[.7\baselineskip]{\headwidth}{0.5pt}}%
@@ -171,9 +233,9 @@
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 调整列表环境的垂直间距
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \let\orig@Itemize =\itemize
 \let\orig@Enumerate =\enumerate
 \let\orig@Description =\description
@@ -202,9 +264,9 @@
 %参考文献
 %\addtolength{\bibsep}{-0.2cm}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 图形表格
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \renewcommand{\figurename}{图}
 \renewcommand{\tablename}{表}
@@ -218,9 +280,9 @@
 \newcommand{\returnpage}[2]{\begin{minipage}{#1}\vspace{0.5ex} #2 \vspace{-1.5ex}\end{minipage}}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 定义题头格言的格式
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newsavebox{\AphorismAuthor}
 \newenvironment{Aphorism}[1]
@@ -242,9 +304,9 @@
 % define graph scale
 \def\gs{1.0}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 自定义项目列表标签及格式 \begin{denselist} 列表项 \end{denselist}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcounter{newlist} %自定义新计数器
 \newenvironment{denselist}[1][temp]{%%%%%定义新环境：可改变的列表题目
 \begin{list}{\textbf{#1} (\arabic{newlist})} %%标签格式
@@ -261,9 +323,9 @@
     }}
 {\end{list}}%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 封面摘要
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%80
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \def\cdegree#1{\def\@cdegree{#1}}\def\@cdegree{}
 \def\ctitle#1{\def\@ctitle{#1}}\def\@ctitle{}
 \def\caffil#1{\def\@caffil{#1}}\def\@caffil{}
@@ -301,7 +363,7 @@
         {\sihao\fs 学{\hfill}位{\hfill}论{\hfill}文{\hfill}题{\hfill}目{\hfill}：\fixedunderlinecenter[12.6cm]{\@ctitle}}
         \parbox[t][1.22cm][c]{\textwidth}
         {\sihao\fs 作{\hfill}者{\hfill}签{\hfill}名{\hfill}：\fixeddistanceleft[12.6cm]{\underline{\hspace{5.8cm}}\hfill
-	       日期：\underline{\hspace{1.4cm}}~年~{\underline{\hspace{0.7cm}}~月~{\underline{\hspace{0.7cm}}~日~}}}}
+               日期：\underline{\hspace{1.4cm}}~年~{\underline{\hspace{0.7cm}}~月~{\underline{\hspace{0.7cm}}~日~}}}}
     \end{center}
     \renewcommand{\baselinestretch}{1.27}
     \cleardoublepage
@@ -330,8 +392,8 @@
                     \xiaosan\song
                     \begin{tabular}{p{0.6cm}p{6.7em}@{\extracolsep{0.4em}}lc}
                         \vspace{0.18cm}
-                        ~ & 学 院（学部）：& \fixedunderlineleft[6.08cm]{\@cschool} & 
-                        \\
+                        ~ & 学 院（学部）：& \fixedunderlineleft[6.08cm]{\@cschool} &
+\\
                          \vspace{0.18cm}
                          ~ & 专 \hfill  业：& \fixedunderlineleft[6.08cm]{\@csubject} & \\
                          \vspace{0.18cm}
@@ -438,4 +500,6 @@
 
 \raggedbottom
 
-% 格式文件结束
+% 文档类文件结束
+
+\endinput
