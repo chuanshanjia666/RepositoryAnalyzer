@@ -5,7 +5,7 @@
 
 \section{代码复杂度分析}
 
-代码复杂度是衡量软件可维护性的重要指标。本项目利用了 \texttt{radon} 库，通过 \texttt{code\_analyzer.py} 模块实现了自动化的复杂度计算与可视化。
+代码复杂度是衡量软件可维护性的重要指标。本项目利用了 \texttt{radon} 库，通过 \texttt{AdvancedRadonAnalyzer} 模块实现了自动化的复杂度计算与可视化。
 
 \subsection{分析方法与实现}
 模块遍历仓库中的所有 Python 文件，基于抽象语法树 (AST) 计算以下核心指标：
@@ -13,6 +13,47 @@
     \item \textbf{圈复杂度 (Cyclomatic Complexity, CC)}：通过计算代码中线性独立路径的数量来衡量逻辑复杂性。\texttt{radon.complexity.cc\_visit} 函数被用于解析代码块，统计控制流结构（如 if, while, for）。
     \item \textbf{可维护性指数 (Maintainability Index, MI)}：利用 \texttt{radon.metrics.mi\_visit} 计算的一个综合评分（0-100），该指标结合了圈复杂度、代码行数 (LOC)、Halstead 体积和注释比例。
 \end{itemize}
+
+\subsection{核心实现代码}
+\texttt{AdvancedRadonAnalyzer} 类的核心实现如下：
+
+\begin{verbatim}
+class AdvancedRadonAnalyzer:
+    def __init__(self, repo_path, output_dir):
+        self.repo_path = Path(repo_path)
+        self.output_dir = Path(output_dir)
+
+    def analyze_file(self, file_path):
+        """分析单个文件的复杂度"""
+        with open(file_path, 'r', encoding='utf-8') as f:
+            code = f.read()
+
+        # 计算圈复杂度
+        cc_results = cc_visit(code)
+        # 计算可维护性指数
+        mi_result = mi_visit(code, True)
+
+        return {
+            'file': str(file_path),
+            'cc_complexity': len(cc_results),
+            'mi_score': mi_result,
+            'loc': len(code.split('\n'))
+        }
+
+    def batch_analyze(self):
+        """批量分析所有Python文件"""
+        python_files = list(self.repo_path.rglob('*.py'))
+        results = []
+
+        for file_path in python_files:
+            try:
+                result = self.analyze_file(file_path)
+                results.append(result)
+            except Exception as e:
+                print(f"分析文件 {file_path} 时出错: {e}")
+
+        return results
+\end{verbatim}
 
 \subsection{可视化分析}
 分析结果被聚合后，工具生成了图 \ref{fig:radon_complexity} 所示的分布图。图中上部展示了有效文件的平均圈复杂度，下部展示了可维护性指数。这能帮助开发者快速定位那些复杂度过高（CC高）或难以维护（MI低）的“坏味道”模块。

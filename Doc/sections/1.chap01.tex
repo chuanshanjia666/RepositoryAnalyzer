@@ -4,6 +4,38 @@
 
 本分析工具包含一个 \texttt{html\_generator.py} 模块，用于生成 Git 提交历史的可视化报告。该模块通过读取 Git 仓库的提交日志（包含哈希值、作者、日期、提交信息及父提交关系），并将这些数据注入到 HTML 模板中。
 
+\subsection{核心实现}
+
+\texttt{html\_generator.py} 的核心实现如下：
+
+\begin{verbatim}
+def generate_git_tree_html(commits, repo_url):
+    """生成Git提交历史的HTML可视化页面"""
+    # 准备提交数据
+    commits_data = []
+    for commit in commits:
+        commit_info = {
+            'hash': commit['hash'],
+            'hashFull': commit['hashFull'],
+            'author': commit['author'],
+            'date': commit['date'],
+            'message': commit['message'],
+            'parents': commit['parents']
+        }
+        commits_data.append(commit_info)
+
+    # 渲染HTML模板
+    html_content = render_template('git_tree_template.html',
+                                 commits=commits_data,
+                                 repo_url=repo_url)
+
+    # 保存HTML文件
+    with open('git_tree.html', 'w', encoding='utf-8') as f:
+        f.write(html_content)
+
+    return 'git_tree.html'
+\end{verbatim}
+
 前端可视化采用了 \texttt{gitgraph.js} 开源库。该库能够以美观的图形方式展示 Git 的分支结构、合并历史以及提交节点。生成的 \texttt{git\_tree.html} 文件支持交互式浏览，用户可以直观地查看项目的演进路线、分支合并情况以及各开发者的提交记录。
 
 \section{多维度git仓库分析}
@@ -20,6 +52,51 @@
     \item \textbf{Collections (Counter)}：Python 内置的高效计数器，用于对作者提交次数、关键词频率等数据进行快速聚合。
 \end{itemize}
 
+\subsection{核心分析函数实现}
+
+\texttt{analyze.py} 中的关键分析函数包括：
+
+\begin{verbatim}
+def analyze_authors(commits):
+    """分析开发者贡献"""
+    author_count = Counter()
+    for commit in commits:
+        author = commit.get('author', 'Unknown')
+        author_count[author] += 1
+
+    return author_count.most_common(10)
+
+def analyze_monthly_activity(commits):
+    """分析月度活跃度"""
+    monthly_data = defaultdict(int)
+    for commit in commits:
+        date_str = commit.get('date', '')
+        if date_str:
+            month = date_str[:7]  # YYYY-MM
+            monthly_data[month] += 1
+
+    return dict(sorted(monthly_data.items()))
+
+def analyze_keywords(commits):
+    """分析提交信息关键词"""
+    keywords = {
+        'add': ['add', '新增', '增加', 'create', 'new'],
+        'fix': ['fix', '修复', 'bug', '解决'],
+        'update': ['update', '更新', 'upgrade', '优化'],
+        'refactor': ['refactor', '重构', '优化', '改进'],
+        'remove': ['remove', '删除', 'del', 'rm']
+    }
+
+    keyword_count = Counter()
+    for commit in commits:
+        message = commit.get('message', '').lower()
+        for category, words in keywords.items():
+            if any(word in message for word in words):
+                keyword_count[category] += 1
+
+    return dict(keyword_count)
+\end{verbatim}
+
 \subsection{分析维度详解}
 
 \subsubsection{开发活跃度分析}
@@ -28,6 +105,27 @@
 
 \textbf{月度活跃度趋势}：
 通过提取每条提交记录的日期并截取至月份（YYYY-MM），统计每月的提交总数。如图 \ref{fig:monthly_activity} 所示，该分析能够清晰地反映出项目的起步期、爆发期及平稳维护期，帮助识别特定的开发冲刺活动。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def plot_monthly_activity(monthly_data, output_path):
+    """绘制月度活跃度图表"""
+    plt.figure(figsize=(12, 6))
+
+    months = list(monthly_data.keys())
+    counts = list(monthly_data.values())
+
+    plt.plot(months, counts, marker='o', linewidth=2, markersize=6)
+    plt.title('项目月度提交活跃度趋势', fontsize=16, fontweight='bold')
+    plt.xlabel('月份', fontsize=12)
+    plt.ylabel('提交数量', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
 
 \begin{figure}[htbp]
     \centering
@@ -38,6 +136,44 @@
 
 \textbf{全天时段提交分布}：
 该分析通过提取提交时间的小时属性（0-23h），绘制了开发者的工作习惯图谱。如图 \ref{fig:hourly_activity} 所示，这不仅能反映出主力团队的工作时区，还能揭示是否存在高强度的加班或夜间突击开发情况。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def analyze_hourly_distribution(commits):
+    """分析全天时段提交分布"""
+    hourly_count = Counter()
+
+    for commit in commits:
+        date_str = commit.get('date', '')
+        if date_str and len(date_str) > 13:
+            hour = int(date_str[11:13])  # 提取小时
+            hourly_count[hour] += 1
+
+    # 确保0-23小时都有数据
+    for hour in range(24):
+        if hour not in hourly_count:
+            hourly_count[hour] = 0
+
+    return dict(sorted(hourly_count.items()))
+
+def plot_hourly_activity(hourly_data, output_path):
+    """绘制全天时段提交分布图"""
+    plt.figure(figsize=(12, 6))
+
+    hours = list(hourly_data.keys())
+    counts = list(hourly_data.values())
+
+    plt.bar(hours, counts, color='skyblue', edgecolor='navy', alpha=0.7)
+    plt.title('全天各时段提交频率分布', fontsize=16, fontweight='bold')
+    plt.xlabel('小时 (24小时制)', fontsize=12)
+    plt.ylabel('提交数量', fontsize=12)
+    plt.xticks(range(0, 24))
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
 
 \begin{figure}[htbp]
     \centering
@@ -51,7 +187,33 @@
 为了了解团队结构，工具对 Git 提交中的 `author` 字段进行了清洗和统计。
 
 \textbf{核心贡献者统计}：
-利用 `Counter` 统计各作者的提交次数，并截取前 10 名生成条形图（图 \ref{fig:author_stats}）。这有助于识别项目的“核心维护者”以及社区参与的广度。在多人协作项目中，通常遵循“二八定律”，即大部分代码由少数核心成员提交。
+利用 `Counter` 统计各作者的提交次数，并截取前 10 名生成条形图（图 \ref{fig:author_stats}）。这有助于识别项目的"核心维护者"以及社区参与的广度。在多人协作项目中，通常遵循"二八定律"，即大部分代码由少数核心成员提交。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def plot_author_contributions(author_data, output_path):
+    """绘制核心贡献者统计图"""
+    plt.figure(figsize=(10, 6))
+
+    authors = [item[0] for item in author_data]
+    counts = [item[1] for item in author_data]
+
+    bars = plt.barh(authors, counts, color='lightcoral', edgecolor='darkred')
+    plt.title('前 10 名作者提交贡献统计', fontsize=16, fontweight='bold')
+    plt.xlabel('提交数量', fontsize=12)
+    plt.ylabel('作者', fontsize=12)
+
+    # 添加数值标签
+    for i, (bar, count) in enumerate(zip(bars, counts)):
+        plt.text(bar.get_width() + max(counts)*0.01, bar.get_y() + bar.get_height()/2,
+                str(count), ha='left', va='center', fontsize=10)
+
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
 
 \begin{figure}[htbp]
     \centering
@@ -66,6 +228,51 @@
 
 \textbf{代码行数 (LOC) 演变}：
 通过累加每次提交的 `insertions`（新增行数）和 `deletions`（删除行数），计算出项目净代码行数的随时间变化的累计曲线（图 \ref{fig:loc_growth}）。陡峭的上升通常对应新功能的引入，而平缓或下降则可能意味着重构或死代码清理。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def analyze_loc_growth(commits):
+    """分析代码行数演变"""
+    loc_data = []
+    total_loc = 0
+
+    for commit in commits:
+        # 从提交统计中获取增删行数
+        insertions = commit.get('stats', {}).get('insertions', 0)
+        deletions = commit.get('stats', {}).get('deletions', 0)
+
+        # 计算净增行数
+        net_change = insertions - deletions
+        total_loc += net_change
+
+        loc_data.append({
+            'date': commit.get('date', ''),
+            'insertions': insertions,
+            'deletions': deletions,
+            'net_change': net_change,
+            'total_loc': total_loc
+        })
+
+    return loc_data
+
+def plot_loc_growth(loc_data, output_path):
+    """绘制代码行数演变图"""
+    plt.figure(figsize=(12, 6))
+
+    dates = [item['date'] for item in loc_data]
+    total_loc = [item['total_loc'] for item in loc_data]
+
+    plt.plot(dates, total_loc, linewidth=2, color='green')
+    plt.title('代码库净行数演变趋势', fontsize=16, fontweight='bold')
+    plt.xlabel('时间', fontsize=12)
+    plt.ylabel('累计代码行数', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
 
 \begin{figure}[htbp]
     \centering
@@ -88,7 +295,38 @@
 为了理解开发者的主要工作内容，工具对 Commit Message 进行了文本挖掘。
 
 \textbf{关键词分布分析}：
-针对中文开发环境，工具定义了一组特定的关键词映射（如 "新增/Add"、"修复/Fix"、"优化/Refactor"）。通过对提交信息进行模式匹配，生成了关键词分布饼图（图 \ref{fig:keywords}）。这一比例直观地展示了项目是处于快速功能迭代阶段（“新增”占比较高）还是稳定维护阶段（“修复”占比较高）。
+针对中文开发环境，工具定义了一组特定的关键词映射（如 "新增/Add"、"修复/Fix"、"优化/Refactor"）。通过对提交信息进行模式匹配，生成了关键词分布饼图（图 \ref{fig:keywords}）。这一比例直观地展示了项目是处于快速功能迭代阶段（"新增"占比较高）还是稳定维护阶段（"修复"占比较高）。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def plot_keywords_distribution(keyword_data, output_path):
+    """绘制关键词分布饼图"""
+    plt.figure(figsize=(8, 8))
+
+    labels = list(keyword_data.keys())
+    sizes = list(keyword_data.values())
+
+    # 设置中文标签
+    label_map = {
+        'add': '新增/Add',
+        'fix': '修复/Fix',
+        'update': '更新/Update',
+        'refactor': '重构/Refactor',
+        'remove': '删除/Remove'
+    }
+
+    display_labels = [label_map.get(label, label) for label in labels]
+
+    # 设置颜色
+    colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ff99cc']
+
+    plt.pie(sizes, labels=display_labels, autopct='%1.1f%%', startangle=90, colors=colors)
+    plt.title('提交信息高频关键词分布', fontsize=16, fontweight='bold')
+    plt.axis('equal')  # 确保饼图是圆形
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
 
 \begin{figure}[htbp]
     \centering
@@ -98,7 +336,50 @@
 \end{figure}
 
 \textbf{修改热点分析}：
-通过统计每次提交中涉及的文件路径，工具识别出了修改频率最高的目录或模块（图 \ref{fig:hotspots}）。这些“热点”区域往往是业务逻辑最复杂、变更最频繁的部分，也是潜在 Bug 的高发区，需要重点关注。
+通过统计每次提交中涉及的文件路径，工具识别出了修改频率最高的目录或模块（图 \ref{fig:hotspots}）。这些"热点"区域往往是业务逻辑最复杂、变更最频繁的部分，也是潜在 Bug 的高发区，需要重点关注。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def analyze_file_hotspots(commits):
+    """分析文件修改热点"""
+    file_count = Counter()
+
+    for commit in commits:
+        # 获取该提交修改的文件列表
+        modified_files = commit.get('files', [])
+
+        for file_path in modified_files:
+            # 提取目录路径（去掉文件名）
+            dir_path = os.path.dirname(file_path)
+            if dir_path:
+                file_count[dir_path] += 1
+
+    # 返回修改频率最高的前10个目录
+    return file_count.most_common(10)
+
+def plot_file_hotspots(hotspot_data, output_path):
+    """绘制修改热点分析图"""
+    plt.figure(figsize=(10, 6))
+
+    directories = [item[0] for item in hotspot_data]
+    counts = [item[1] for item in hotspot_data]
+
+    bars = plt.barh(directories, counts, color='lightblue', edgecolor='navy')
+    plt.title('最常被修改的代码目录 (热点分析)', fontsize=16, fontweight='bold')
+    plt.xlabel('修改次数', fontsize=12)
+    plt.ylabel('目录路径', fontsize=12)
+
+    # 添加数值标签
+    for i, (bar, count) in enumerate(zip(bars, counts)):
+        plt.text(bar.get_width() + max(counts)*0.01, bar.get_y() + bar.get_height()/2,
+                str(count), ha='left', va='center', fontsize=10)
+
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
 
 \begin{figure}[htbp]
     \centering

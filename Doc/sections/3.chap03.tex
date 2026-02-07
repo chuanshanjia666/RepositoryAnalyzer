@@ -1,67 +1,385 @@
-\chapter{github仓库分析}
+\chapter{深度代码分析}
 \label{chap03}
 
-本章介绍基于 GitHub API 的仓库数据挖掘与分析。依托 \texttt{PyGithub} 库，工具实现了对 Pull Request 协作流程、Issue 问题追踪以及 GitHub Actions CI/CD 工作流的深度透视。
+本章详细介绍针对 COMTool 项目进行的深度代码分析。分析工作涵盖了代码复杂度评估、项目依赖安全审计、静态漏洞扫描以及 GitHub 生态分析四个方面，旨在全方位评估软件的鲁棒性与可维护性。
 
-\section{GitHub PR (Pull Request) 分析}
+\section{代码复杂度分析}
 
-Pull Request 是开源项目协作的核心载体，其处理效率直接反映了社区的活跃度与维护者的响应能力。\texttt{pr\_analysis.py} 模块主要实现了以下维度的分析：
+代码复杂度是衡量软件可维护性的重要指标。本项目利用 \texttt{radon} 库，通过 \texttt{AdvancedRadonAnalyzer} 模块实现了自动化的复杂度计算与可视化。
 
-\subsection{生命周期与状态统计}
-工具抓取了仓库的全量 PR 数据，计算了 PR 的合并率（Merged Rate）与拒绝率（Rejected Rate）。如图 \ref{fig:pr_analysis} 所示，左侧饼图直观展示了 PR 的最终流向状态。
+\subsection{分析方法与实现}
+模块遍历仓库中的所有 Python 文件，基于抽象语法树 (AST) 计算以下核心指标：
+\begin{itemize}
+    \item \textbf{圈复杂度 (Cyclomatic Complexity, CC)}：通过计算代码中线性独立路径的数量来衡量逻辑复杂性。\texttt{radon.complexity.cc\_visit} 函数被用于解析代码块，统计控制流结构（如 if, while, for）。
+    \item \textbf{可维护性指数 (Maintainability Index, MI)}：利用 \texttt{radon.metrics.mi\_visit} 计算的一个综合评分（0-100），该指标结合了圈复杂度、代码行数 (LOC)、Halstead 体积和注释比例。
+\end{itemize}
 
-\subsection{僵尸 PR (Zombie PRs) 识别}
-为了帮助维护者清理积压任务，模块通过设定时间阈值（默认为 7 天无活动），识别出长期未处理的 "Zombie PRs"。这能够提醒社区管理者关注那些被遗忘的贡献。
-
-\subsection{审查效率评估}
-分析器计算了每个 PR 从创建到关闭/合并的平均耗时（平均生命周期），以及平均 Review 评论数。这些指标量化了代码审查流程的效率与质量。
+\subsection{分析结果}
+分析结果显示，COMTool 项目共分析了 47 个文件，其中 38 个为有效文件。图 \ref{fig:radon_complexity} 展示了代码复杂度分布情况。从分析结果可以看出，项目整体代码复杂度控制良好，大部分模块的圈复杂度保持在合理范围内，表明代码结构相对清晰，维护成本较低。
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{pr_analysis_report.png}
-    \caption{Pull Request 状态分布与审查效率仪表盘}
-    \label{fig:pr_analysis}
+    \includegraphics[width=0.9\textwidth]{radon_complexity_visualization.png}
+    \caption{代码圈复杂度与可维护性指数分布}
+    \label{fig:radon_complexity}
 \end{figure}
 
-\section{GitHub Issue 安全分析}
+\section{项目依赖与安全审计}
 
-Issue 不仅是 Bug 报告的入口，也是发现潜在安全风险的重要渠道。\texttt{github\_issue\_analyzer.py} 模块专注于从海量 Issue 中挖掘安全线索。
+针对现代软件开发中普遍存在的"供应链安全"问题，\texttt{DependencyAnalyzer} 模块基于 \texttt{pipdeptree} 和 \texttt{safety} 工具实现了深度的依赖分析。
 
-\subsection{安全关键词挖掘}
-该分析器定义了一套覆盖广泛的安全关键词词典（如 \textit{xss, injection, vulnerability, CVE, rce, 溢出} 等）。它自动遍历 Issue 的标题、正文及标签，筛选出可能涉及安全漏洞的条目。
-
-\subsection{趋势与分类统计}
-图 \ref{fig:issue_analysis} 展示了分析结果。
+\subsection{分析维度}
 \begin{itemize}
-    \item \textbf{趋势分析}：右上角的折线图展示了近期 Issue 的提交与关闭趋势，反映了项目的问题吞吐量。
-    \item \textbf{安全占比}：右下角的饼图则突出了安全相关 Issue 在整体问题中的占比，帮助安全团队快速评估项目的风险暴露面。
+    \item \textbf{依赖树解析}：通过调用 \texttt{pipdeptree --json} 命令，工具解析当前环境的依赖关系，构建出完整的依赖树。这不仅识别了直接依赖，还挖掘了隐蔽的传递依赖（Transitive Dependencies）。
+    \item \textbf{漏洞数据库比对}：集成 \texttt{safety} 工具，将项目依赖版本与已知的 CVE 漏洞数据库进行比对，自动标记存在安全风险的包版本。
 \end{itemize}
+
+\subsection{核心实现}
+\texttt{DependencyAnalyzer} 的关键实现包括：
+
+\begin{verbatim}
+class DependencyAnalyzer:
+    def analyze_python_deps(self):
+        """分析Python依赖"""
+        # 使用pipdeptree获取依赖树
+        result = subprocess.run(
+            ['pipdeptree', '--json'],
+            capture_output=True, text=True
+        )
+
+        if result.returncode == 0:
+            deps = json.loads(result.stdout)
+            return self._process_dependencies(deps)
+        else:
+            raise RuntimeError("依赖分析失败")
+
+    def _check_vulnerabilities(self, deps):
+        """检查依赖漏洞"""
+        result = subprocess.run(
+            ['safety', 'check', '--json'],
+            capture_output=True, text=True
+        )
+
+        vulnerabilities = []
+        if result.returncode != 0:
+            try:
+                vulnerabilities = json.loads(result.stdout)
+            except:
+                pass
+
+        return vulnerabilities
+\end{verbatim}
+
+\subsection{分析结果}
+图 \ref{fig:dependency_analysis} 展示了分析结果。分析显示项目依赖管理良好，\textbf{未检测到有漏洞的依赖}，这表明项目在依赖选择和维护方面做得较为完善，有效降低了供应链攻击的风险。
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{github_issue_analysis_v2.png}
-    \caption{Issue 趋势与安全相关性分析}
-    \label{fig:issue_analysis}
+    \includegraphics[width=1.0\textwidth]{dependency_analysis.png}
+    \caption{项目依赖构成与安全漏洞分析}
+    \label{fig:dependency_analysis}
 \end{figure}
 
-\section{GitHub Actions 工作流分析}
+\section{代码漏洞扫描 (SAST)}
 
-GitHub Actions 是现代项目自动化的基石。\texttt{github\_actions\_analyzer.py} 模块旨在评估 CI/CD 流程的安全与效率。
+为了在代码层面发现潜在的安全隐患，项目集成了 \texttt{bandit} 做为静态应用程序安全测试 (SAST) 工具。
 
-\subsection{工作流安全性检测}
-工具内置了基于正则表达式的风险模式库，对 `.github/workflows` 下的 YAML 文件进行静态扫描。主要检测：
+\subsection{扫描机制}
+\texttt{AdvancedVulnerabilityScanner} 模块封装了 \texttt{BanditManager}。它不执行代码，而是将 Python 源码解析为 AST，并在节点上运行一系列插件来匹配已知的漏洞模式，例如：
 \begin{itemize}
-    \item \textbf{高危模式}：如使用 \texttt{curl | bash} 直接执行远程脚本，或 \texttt{pull\_request\_target} 事件的不当使用。
-    \item \textbf{供应链风险}：如引用第三方 Action 时使用可变的 version tag 而非不可变的 commit hash。
-    \item \textbf{权限配置}：检查是否存在过宽的权限授予（如默认 write-all）。
+    \item 硬编码的敏感信息（密码、API Key）。
+    \item 弱加密算法（如 MD5, SHA1）的使用。
+    \item 危险的函数调用（如 \texttt{eval()}, \texttt{subprocess.Popen} 的 Shell 注入风险）。
+    \item 不安全的网络绑定（如绑定到 0.0.0.0）。
 \end{itemize}
 
-\subsection{运行效率分析}
-通过分析最近的工作流运行记录（Workflow Runs），统计了运行成功率与平均耗时。图 \ref{fig:actions_analysis} 综合展示了工作流的健康状况（成功/失败比例）以及各项安全指标的检测结果。
+\subsection{实现机制}
+漏洞扫描的核心实现如下：
+
+\begin{verbatim}
+class AdvancedVulnerabilityScanner:
+    def __init__(self, repo_path, output_dir):
+        self.repo_path = Path(repo_path)
+        self.output_dir = Path(output_dir)
+
+    def advanced_bandit_scan(self):
+        """执行Bandit漏洞扫描"""
+        # 配置Bandit扫描参数
+        cmd = [
+            'bandit', '-r', str(self.repo_path),
+            '-f', 'json', '-o', str(self.output_dir / 'bandit_report.json')
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+
+        # 解析扫描结果
+        if result.returncode in [0, 1]:  # Bandit返回1表示发现问题
+            return self._parse_bandit_results()
+        else:
+            raise RuntimeError(f"Bandit扫描失败: {result.stderr}")
+
+    def _parse_bandit_results(self):
+        """解析Bandit扫描结果"""
+        report_file = self.output_dir / 'bandit_report.json'
+        if report_file.exists():
+            with open(report_file, 'r') as f:
+                data = json.load(f)
+
+            # 按严重程度分类统计
+            severity_count = {'high': 0, 'medium': 0, 'low': 0}
+            for issue in data.get('results', []):
+                severity = issue.get('issue_severity', 'low')
+                if severity in severity_count:
+                    severity_count[severity] += 1
+
+            return {
+                'total_issues': len(data.get('results', [])),
+                'severity_count': severity_count,
+                'results': data.get('results', [])
+            }
+
+        return {'total_issues': 0, 'severity_count': {'high': 0, 'medium': 0, 'low': 0}, 'results': []}
+\end{verbatim}
+
+\subsection{风险评估}
+扫描结果被分类为 High, Medium, Low 三个风险等级。分析结果显示：
+\begin{itemize}
+    \item 高风险漏洞：5 个
+    \item 中风险漏洞：6 个
+    \item 低风险漏洞：34 个
+\end{itemize}
+
+图 \ref{fig:vulnerability_viz} 直观展示了各类风险的分布情况。虽然发现了一些安全漏洞，但主要集中在低风险和中风险类别，高风险漏洞数量相对较少，为安全修复优先级提供了明确的数据支持。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{vulnerability_visualization.png}
+    \caption{Bandit 静态漏洞扫描结果分布}
+    \label{fig:vulnerability_viz}
+\end{figure}
+
+\section{GitHub 生态分析}
+
+\subsection{安全 Issues 分析}
+通过 \texttt{GitHubIssueAnalyzer} 模块对 Neutree/COMTool 仓库进行分析，获取了最近 180 天的 issues 数据。该模块基于 PyGithub 库实现，核心功能包括：
+
+\begin{verbatim}
+class GitHubIssueAnalyzer:
+    def __init__(self, repo_owner, repo_name, output_dir, token=None):
+        self.repo_owner = repo_owner
+        self.repo_name = repo_name
+        self.output_dir = Path(output_dir)
+        self.github = Github(token) if token else Github()
+        self.repo = self.github.get_repo(f"{repo_owner}/{repo_name}")
+
+    def get_issues(self, days_back=180):
+        """获取指定时间范围内的issues"""
+        since = datetime.now() - timedelta(days=days_back)
+        issues = []
+
+        for issue in self.repo.get_issues(state='all', since=since):
+            issues.append({
+                'number': issue.number,
+                'title': issue.title,
+                'body': issue.body or "",
+                'state': issue.state,
+                'created_at': issue.created_at,
+                'labels': [label.name for label in issue.labels]
+            })
+
+        return issues
+
+    def analyze_security_issues(self, issues):
+        """分析安全相关的issues"""
+        security_keywords = [
+            'vulnerability', 'security', 'cve', 'exploit', 'injection',
+            'xss', 'rce', 'overflow', 'bypass', '权限', '漏洞', '安全'
+        ]
+
+        security_issues = []
+        for issue in issues:
+            text = f"{issue['title']} {issue['body']}".lower()
+            if any(keyword.lower() in text for keyword in security_keywords):
+                security_issues.append(issue)
+
+        return {
+            'security_issues': security_issues,
+            'severity_count': self._classify_severity(security_issues)
+        }
+\end{verbatim}
+
+分析结果显示：
+\begin{itemize}
+    \item 共获取到 9 个 issues
+    \item 发现 1 个安全相关的 issue
+    \item 风险等级分布：高风险 1 个，中风险 0 个，低风险 0 个
+\end{itemize}
+
+这表明项目在 GitHub 上存在一个需要关注的安全问题，建议开发团队优先处理该高风险 issue。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{github_issue_analysis_v2.png}
+    \caption{GitHub 安全 Issues 分析结果}
+    \label{fig:github_issues}
+\end{figure}
+
+\subsection{PR 分析}
+通过 \texttt{analyze\_pr\_repository} 函数对项目 PR 数据进行分析，该函数实现了全面的 PR 协作效率评估：
+
+\begin{verbatim}
+def analyze_pr_repository(repo_full_name, days_threshold=7, github_token=None):
+    """分析GitHub PR数据"""
+    g = Github(github_token) if github_token else Github()
+    repo = g.get_repo(repo_full_name)
+
+    pr_data = []
+    for pr in repo.get_pulls(state='all'):
+        pr_info = {
+            'number': pr.number,
+            'title': pr.title,
+            'state': pr.state,
+            'created_at': pr.created_at,
+            'merged_at': pr.merged_at,
+            'closed_at': pr.closed_at,
+            'review_comments': pr.review_comments,
+            'comments': pr.comments,
+            'additions': pr.additions,
+            'deletions': pr.deletions
+        }
+        pr_data.append(pr_info)
+
+    # 计算关键指标
+    total_pr = len(pr_data)
+    merged_pr = len([pr for pr in pr_data if pr['state'] == 'merged'])
+    closed_pr = len([pr for pr in pr_data if pr['state'] == 'closed' and not pr['merged_at']])
+
+    # 僵尸PR识别
+    zombie_prs = []
+    for pr in pr_data:
+        if pr['state'] == 'open':
+            days_open = (datetime.now() - pr['created_at'].replace(tzinfo=None)).days
+            if days_open > days_threshold:
+                zombie_prs.append(pr)
+
+    return {
+        'total_pr': total_pr,
+        'merged_pr': merged_pr,
+        'closed_pr': closed_pr,
+        'merge_rate': (merged_pr / total_pr) * 100 if total_pr > 0 else 0,
+        'zombie_pr_count': len(zombie_prs),
+        'zombie_pr_rate': (len(zombie_prs) / total_pr) * 100 if total_pr > 0 else 0
+    }
+\end{verbatim}
+
+分析结果显示，共分析了 23 个 PR：
+\begin{itemize}
+    \item 总 PR 数量：23 个
+    \item 合并率：69.57\%
+    \item 拒绝率：21.74\%
+    \item 僵尸 PR 率：8.7\%
+    \item 平均审查时间：7.86 小时
+    \item 平均评论数：1.65 条
+\end{itemize}
+
+这些指标表明项目开发流程相对健康，合并率较高，审查效率良好，僵尸 PR 率控制在较低水平。
+
+\subsection{GitHub Actions 工作流分析}
+通过 \texttt{GitHubActionsAnalyzer} 模块分析了项目的 CI/CD 流程，该模块实现了工作流安全性和效率的全面评估：
+
+\begin{verbatim}
+class GitHubActionsAnalyzer:
+    def __init__(self, repo_owner, repo_name, output_dir, token=None):
+        self.repo_owner = repo_owner
+        self.repo_name = repo_name
+        self.output_dir = Path(output_dir)
+        self.github = Github(token) if token else Github()
+        self.repo = self.github.get_repo(f"{repo_owner}/{repo_name}")
+
+    def get_workflows(self):
+        """获取所有GitHub Actions工作流"""
+        workflows = []
+        try:
+            actions_repo = self.repo
+            for workflow in actions_repo.get_workflows():
+                workflows.append({
+                    'id': workflow.id,
+                    'name': workflow.name,
+                    'path': workflow.path,
+                    'state': workflow.state
+                })
+        except Exception as e:
+            print(f"获取工作流失败: {e}")
+
+        return workflows
+
+    def analyze_workflow_security(self, workflows):
+        """分析工作流安全性"""
+        security_issues = []
+
+        for workflow in workflows:
+            # 检查工作流文件内容
+            try:
+                file_content = self.repo.get_contents(workflow['path'])
+                content = file_content.decoded_content.decode('utf-8')
+
+                # 检测安全风险模式
+                risks = self._check_security_patterns(content)
+                if risks:
+                    security_issues.append({
+                        'workflow': workflow['name'],
+                        'risks': risks
+                    })
+
+            except Exception as e:
+                print(f"分析工作流 {workflow['name']} 失败: {e}")
+
+        return security_issues
+
+    def _check_security_patterns(self, content):
+        """检查工作流中的安全风险模式"""
+        risks = []
+
+        # 检查危险模式
+        dangerous_patterns = [
+            r'curl.*\|\s*bash',  # curl | bash 模式
+            r'wget.*\|\s*bash',  # wget | bash 模式
+            r'uses:\s*actions/.*@v\d',  # 使用版本标签而非commit hash
+        ]
+
+        for pattern in dangerous_patterns:
+            if re.search(pattern, content, re.IGNORECASE):
+                risks.append(f"检测到危险模式: {pattern}")
+
+        return risks
+\end{verbatim}
+
+分析结果显示：
+\begin{itemize}
+    \item 分析的工作流数量：5 个
+    \item 工作流运行记录：14 次
+    \item 安全问题：0 个
+\end{itemize}
+
+分析结果显示项目在 CI/CD 安全性方面表现良好，\textbf{未发现 Actions 安全问题}，这表明项目的自动化流程配置安全可靠。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{github_actions_analysis.png}
-    \caption{GitHub Actions 工作流安全与效率分析}
-    \label{fig:actions_analysis}
+    \caption{GitHub Actions 工作流分析结果}
+    \label{fig:github_actions}
 \end{figure}
+
+\section{综合评估}
+
+基于以上深度分析，COMTool 项目在代码质量方面整体表现良好：
+
+\begin{itemize}
+    \item \textbf{代码复杂度}：控制良好，维护成本较低
+    \item \textbf{依赖安全}：无已知漏洞依赖，供应链管理优秀
+    \item \textbf{代码安全}：存在一些中低风险漏洞，需要关注高风险漏洞
+    \item \textbf{社区健康度}：PR 合并率较高，审查效率良好
+    \item \textbf{CI/CD 安全}：工作流配置安全，无已知安全问题
+\end{itemize}
+
+建议开发团队重点关注 Bandit 扫描出的高风险漏洞和 GitHub 上的安全 issue，持续改进代码质量和安全性。
