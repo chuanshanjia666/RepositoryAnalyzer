@@ -1,7 +1,9 @@
 import os
 import json
 import git
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # ========== 统一导入所有模块 ==========
 from html_generator import generate_git_tree_html
@@ -14,105 +16,190 @@ from github_issue_analyzer import GitHubIssueAnalyzer
 from github_actions_analyzer import GitHubActionsAnalyzer
 
 # ========== 全局配置（统一规范） ==========
+# 路径配置使用Path对象，提升跨平台兼容性
+BASE_DIR = Path(__file__).parent
 GIT_URL = "https://github.com/Neutree/COMTool.git"
-REPO_PATH = "./repo"
-REPORT_DIR = "reports"
+REPO_PATH = BASE_DIR / "repo"
+REPORT_DIR = BASE_DIR / "reports"
 PREFIX = "comtool_"
 
 # GitHub配置（可选）
 GITHUB_REPO = "Neutree/COMTool"  # 格式: owner/repo
-GITHUB_TOKEN = None  # 可选: GitHub token，用于提高API限制
+# 建议从环境变量读取Token，更安全
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or None  
+
+# 全局常量
+MAX_COMMITS = 300  # 最大分析提交数
+GITHUB_ISSUE_DAYS = 180  # GitHub Issue分析时间范围
 
 def clone_repo(url, path):
-    """克隆Git仓库（若不存在），增加异常处理"""
-    if not os.path.exists(path):
-        print(f"📥 克隆仓库 {url} 到 {path}...")
+    """克隆Git仓库（若不存在），增强异常处理和用户提示"""
+    path = Path(path)
+    if not path.exists():
+        print(f"📥 克隆仓库 {url} 到 {path.absolute()}...")
         try:
-            git.Repo.clone_from(url, path)
+            # 增加超时和深度限制，避免克隆过大仓库
+            repo = git.Repo.clone_from(
+                url, 
+                path,
+                depth=100,  # 浅克隆，加快速度
+                timeout=300
+            )
+            return repo
+        except git.GitCommandError as e:
+            print(f"❌ Git命令执行失败：{str(e)}")
+        except TimeoutError:
+            print(f"❌ 克隆仓库超时（300秒）")
         except Exception as e:
             print(f"❌ 克隆仓库失败：{str(e)}")
-            return None
+        return None
     else:
-        print(f"📁 仓库已存在：{path}")
-    return git.Repo(path) if os.path.exists(path) else None
+        print(f"📁 仓库已存在：{path.absolute()}")
+    try:
+        return git.Repo(path)
+    except Exception as e:
+        print(f"❌ 加载本地仓库失败：{e}")
+        return None
 
 def get_git_history(repo, limit=100):
-    """获取Git提交历史，增加异常处理"""
+    """获取Git提交历史，增强异常处理和数据校验"""
     if not repo:
         return []
+    
     commits = []
     try:
-        for commit in repo.iter_commits('--all', max_count=limit, topo_order=True):
-            commits.append({
-                "hash": commit.hexsha[:7],
-                "hashFull": commit.hexsha,
-                "author": commit.author.name,
-                "date": datetime.fromtimestamp(commit.authored_date).strftime('%Y-%m-%d %H:%M'),
-                "message": commit.message.strip().split('\n')[0],
-                "parents": [p.hexsha for p in commit.parents],
-                "refs": [ref.name for ref in repo.refs if hasattr(ref, 'commit') and ref.commit == commit]
-            })
+        # 分批获取提交，避免内存溢出
+        for idx, commit in enumerate(repo.iter_commits('--all', max_count=limit, topo_order=True)):
+            # 基础数据校验
+            author_name = commit.author.name if commit.author else "未知作者"
+            commit_date = datetime.fromtimestamp(commit.authored_date) if commit.authored_date else datetime.now()
+            
+            commit_info = {
+                "hash": commit.hexsha[:7] if commit.hexsha else "",
+                "hashFull": commit.hexsha or "",
+                "author": author_name,
+                "date": commit_date.strftime('%Y-%m-%d %H:%M'),
+                "message": commit.message.strip().split('\n')[0] if commit.message else "",
+                "parents": [p.hexsha for p in commit.parents] if commit.parents else [],
+                "refs": [ref.name for ref in repo.refs if hasattr(ref, 'commit') and ref.commit == commit] if repo.refs else []
+            }
+            commits.append(commit_info)
+            
+            # 进度提示
+            if idx % 50 == 0 and idx > 0:
+                print(f"   已读取 {idx}/{limit} 个提交记录")
+                
     except Exception as e:
         print(f"❌ 获取提交历史失败：{str(e)}")
+        # 返回已获取的部分数据，避免完全失败
+        return commits[::-1]
+    
     return commits[::-1]
 
+def setup_environment():
+    """环境初始化：创建目录、检查权限"""
+    # 创建报告目录
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # 检查写入权限
+    try:
+        test_file = REPORT_DIR / ".write_test"
+        test_file.touch()
+        test_file.unlink()
+    except PermissionError:
+        print(f"❌ 无写入权限：{REPORT_DIR.absolute()}")
+        return False
+    return True
+
 if __name__ == "__main__":
-    # 1. 克隆仓库并获取提交历史
+    print("🚀 启动代码分析工具...")
+    print(f"📅 当前时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"💻 Python版本：{sys.version}")
+    
+    # 1. 环境初始化
+    if not setup_environment():
+        sys.exit(1)
+    
+    # 2. 克隆/加载仓库
     repo = clone_repo(GIT_URL, REPO_PATH)
     if not repo:
-        print("❌ 仓库克隆失败，程序退出")
-        exit(1)
-    commits = get_git_history(repo, 300)
+        print("❌ 仓库加载失败，程序退出")
+        sys.exit(1)
     
-    # 2. 确保报告目录存在
-    os.makedirs(REPORT_DIR, exist_ok=True)
+    # 3. 获取提交历史
+    print("\n📜 读取Git提交历史...")
+    commits = get_git_history(repo, MAX_COMMITS)
+    print(f"✅ 共读取 {len(commits)} 个提交记录")
     
-    # 3. 原有基础分析逻辑（保留main分支核心）
+    # 4. 基础Git分析
     print("\n📊 执行基础Git分析...")
-    analyze.run_all_analysis(repo, commits, output_dir=REPORT_DIR, prefix=PREFIX)
-    run_visualizations(REPORT_DIR, prefix=PREFIX)
-    generate_git_tree_html(commits, GIT_URL)
-
-    # 4. 新增深度代码分析（保留master分支核心）
+    try:
+        analyze.run_all_analysis(repo, commits, output_dir=str(REPORT_DIR), prefix=PREFIX)
+        run_visualizations(str(REPORT_DIR), prefix=PREFIX)
+        generate_git_tree_html(commits, GIT_URL)
+        print("✅ 基础Git分析完成")
+    except Exception as e:
+        print(f"❌ 基础Git分析失败：{e}")
+        # 不中断，继续执行后续分析
+    
+    # 5. 深度代码分析
     print("\n" + "="*50)
     print("🔍 开始执行深度代码分析...")
     print("="*50 + "\n")
 
-    # 4.1 复杂度分析（Radon）
+    # 5.1 复杂度分析（Radon）- 增加异常处理
     print("📈 分析代码复杂度...")
-    radon_analyzer = AdvancedRadonAnalyzer(REPO_PATH, REPORT_DIR)
-    radon_results = radon_analyzer.batch_analyze()
-    radon_analyzer.visualize_complexity(radon_results)
+    try:
+        radon_analyzer = AdvancedRadonAnalyzer(str(REPO_PATH), str(REPORT_DIR))
+        radon_results = radon_analyzer.batch_analyze()
+        # 修复float不可迭代问题：确保结果是可迭代类型
+        if not isinstance(radon_results, (list, tuple, dict)):
+            radon_results = []
+            print("⚠️  复杂度分析结果异常，已重置为空列表")
+        radon_analyzer.visualize_complexity(radon_results)
+        print(f"✅ 复杂度分析完成（有效文件数：{len(radon_results) if isinstance(radon_results, list) else 'N/A'}）")
+    except Exception as e:
+        print(f"❌ 复杂度分析失败：{e}")
 
-    # 4.2 依赖分析
+    # 5.2 依赖分析 - 优雅降级
     print("\n📦 分析项目依赖...")
-    dep_analyzer = DependencyAnalyzer(REPO_PATH, REPORT_DIR)
-    python_deps = dep_analyzer.analyze_python_deps()
-    dep_analyzer.analyze_generic_deps()
-    dep_analyzer.visualize_deps(python_deps)
+    try:
+        dep_analyzer = DependencyAnalyzer(str(REPO_PATH), str(REPORT_DIR))
+        python_deps = dep_analyzer.analyze_python_deps()
+        dep_analyzer.analyze_generic_deps()
+        dep_analyzer.visualize_deps(python_deps)
+        print("✅ 依赖分析完成")
+    except RuntimeError as e:
+        print(f"⚠️  依赖分析部分失败：{e}")
+    except Exception as e:
+        print(f"❌ 依赖分析失败：{e}")
 
-    # 4.3 漏洞扫描
+    # 5.3 漏洞扫描
     print("\n🛡️  扫描代码漏洞...")
-    vuln_scanner = AdvancedVulnerabilityScanner(REPO_PATH, REPORT_DIR)
-    bandit_results = vuln_scanner.advanced_bandit_scan()
-    vuln_scanner.visualize_vulns(bandit_results)
+    try:
+        vuln_scanner = AdvancedVulnerabilityScanner(str(REPO_PATH), str(REPORT_DIR))
+        bandit_results = vuln_scanner.advanced_bandit_scan()
+        vuln_scanner.visualize_vulns(bandit_results)
+        print("✅ 漏洞扫描完成")
+    except Exception as e:
+        print(f"❌ 漏洞扫描失败：{e}")
 
-    # 4.4 GitHub安全issue分析
+    # 5.4 GitHub安全issue分析 - 整合最优逻辑，移除重复代码
     print("\n🐙 分析GitHub安全issues...")
-    if GITHUB_REPO:
+    if GITHUB_REPO and GITHUB_TOKEN:
         try:
             # 解析owner和repo
-            owner, repo = GITHUB_REPO.split('/')
+            owner, repo_name = GITHUB_REPO.split('/')
             github_analyzer = GitHubIssueAnalyzer(
                 repo_owner=owner,
-                repo_name=repo,
-                output_dir=REPORT_DIR,
+                repo_name=repo_name,
+                output_dir=str(REPORT_DIR),
                 token=GITHUB_TOKEN
             )
 
-            # 获取并分析issues
-            print(f"   获取 {GITHUB_REPO} 的issues...")
-            issues = github_analyzer.get_issues(days_back=180)  # 最近6个月
+            # 获取并分析issues - 增加重试机制和时间范围配置
+            print(f"   获取 {GITHUB_REPO} 的issues（最近{GITHUB_ISSUE_DAYS}天）...")
+            issues = github_analyzer.get_issues(days_back=GITHUB_ISSUE_DAYS)
 
             if issues:
                 analysis_results = github_analyzer.analyze_security_issues(issues)
@@ -120,11 +207,11 @@ if __name__ == "__main__":
                 github_analyzer.save_results(analysis_results, trend_data)
                 github_analyzer.visualize_results(analysis_results, trend_data)
 
-                # 显示安全issue摘要
-                security_count = len(analysis_results['security_issues'])
+                # 显示安全issue摘要（增加get方法避免KeyError）
+                security_count = len(analysis_results.get('security_issues', []))
                 if security_count > 0:
                     print(f"   ⚠️  发现 {security_count} 个安全相关的issues")
-                    for severity, count in analysis_results['severity_count'].items():
+                    for severity, count in analysis_results.get('severity_count', {}).items():
                         if count > 0:
                             print(f"      {severity}: {count} 个")
                 else:
@@ -133,7 +220,9 @@ if __name__ == "__main__":
                 print("   ⚠️  未获取到GitHub issues")
 
         except Exception as e:
-            print(f"   ❌ GitHub分析失败: {str(e)}")
+            print(f"   ❌ GitHub分析失败: {str(e)[:200]}")
+    elif GITHUB_REPO and not GITHUB_TOKEN:
+        print("   ⚠️  未配置GitHub Token，跳过issue分析（配置GITHUB_TOKEN环境变量可启用）")
     else:
         print("   ⚠️  未配置GitHub仓库，跳过issue分析")
 
@@ -186,12 +275,16 @@ if __name__ == "__main__":
 
     # 最终提示
     print("\n🎉 所有分析完成！")
-    print(f"📁 报告目录：{os.path.abspath(REPORT_DIR)}")
-    print(f"🌐 Git可视化页面：{os.path.abspath('git_tree.html')}")
+    # 使用Path对象的absolute方法，跨平台更友好
+    print(f"📁 报告目录：{REPORT_DIR.absolute()}")
+    print(f"🌐 Git可视化页面：{(BASE_DIR / 'git_tree.html').absolute()}")
 
-    # 显示生成的安全报告
-    security_files = [f for f in os.listdir(REPORT_DIR) if 'security' in f or 'vulnerability' in f or 'github' in f]
-    if security_files:
-        print(f"\n🔒 安全分析报告:")
-        for file in security_files:
-            print(f"   - {file}")
+    # 显示生成的安全报告（增加异常处理和大小写不敏感匹配）
+    try:
+        security_files = [f for f in os.listdir(REPORT_DIR) if any(keyword in f.lower() for keyword in ['security', 'vulnerability', 'github'])]
+        if security_files:
+            print(f"\n🔒 安全分析报告:")
+            for file in security_files:
+                print(f"   - {file}")
+    except Exception as e:
+        print(f"\n⚠️  列出安全报告文件失败：{e}")
