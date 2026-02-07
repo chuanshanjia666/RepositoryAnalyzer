@@ -38,6 +38,14 @@ def generate_git_tree_html(commits, repo_url):
 
 前端可视化采用了 \texttt{gitgraph.js} 开源库。该库能够以美观的图形方式展示 Git 的分支结构、合并历史以及提交节点。生成的 \texttt{git\_tree.html} 文件支持交互式浏览，用户可以直观地查看项目的演进路线、分支合并情况以及各开发者的提交记录。
 
+结果如图 \ref{fig:git_tree} 所示，展示了 COMTool 项目的 Git 提交历史。每个节点代表一次提交，节点之间的连线表示父子关系。不同颜色的节点可以区分不同的分支或标签，鼠标悬停在节点上会显示详细的提交信息。
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{git_tree.png}
+    \caption{COMTool 项目的 Git 提交历史可视化}
+    \label{fig:git_tree}
+\end{figure}
+
 \section{多维度git仓库分析}
 
 本节详细介绍 \texttt{analyze.py} 模块所实现的多维度 Git 仓库分析功能。该模块旨在通过量化数据揭示项目的开发节奏、团队结构及代码演进规律。
