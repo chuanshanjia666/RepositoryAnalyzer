@@ -14,6 +14,7 @@ from dependency_analyzer import DependencyAnalyzer
 from vulnerability_scanner import AdvancedVulnerabilityScanner
 from github_issue_analyzer import GitHubIssueAnalyzer
 from github_actions_analyzer import GitHubActionsAnalyzer
+from pr_analysis import analyze_pr_repository
 
 # ========== 全局配置（统一规范） ==========
 # 路径配置使用Path对象，提升跨平台兼容性
@@ -26,7 +27,12 @@ PREFIX = "comtool_"
 # GitHub配置（可选）
 GITHUB_REPO = "Neutree/COMTool"  # 格式: owner/repo
 # 建议从环境变量读取Token，更安全
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or None  
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or None
+
+# PR分析配置
+PR_ANALYSIS_ENABLED = True  # 是否启用PR分析
+PR_ANALYSIS_REPO = GITHUB_REPO  # PR分析的仓库，默认与GitHub repo相同
+PR_ANALYSIS_DAYS_THRESHOLD = 7  # 僵尸PR的时间阈值（天）  
 
 # 全局常量
 MAX_COMMITS = 300  # 最大分析提交数
@@ -224,7 +230,23 @@ if __name__ == "__main__":
     else:
         print("   ⚠️  未配置GitHub仓库，跳过issue分析")
 
-    # 4.5 GitHub Actions工作流分析
+    # 4.5 PR分析
+    print("\n🔀 分析GitHub PR数据...")
+    if PR_ANALYSIS_ENABLED and PR_ANALYSIS_REPO:
+        try:
+            print(f"   分析 {PR_ANALYSIS_REPO} 的PR数据...")
+            pr_results = analyze_pr_repository(
+                repo_full_name=PR_ANALYSIS_REPO,
+                days_threshold=PR_ANALYSIS_DAYS_THRESHOLD,
+                github_token=GITHUB_TOKEN
+            )
+            print(f"   ✅ PR分析完成，共分析 {pr_results.get('total_pr', 0)} 个PR")
+        except Exception as e:
+            print(f"   ❌ PR分析失败: {str(e)}")
+    else:
+        print("   ⚠️  未配置PR分析或仓库，跳过PR分析")
+
+    # 4.6 GitHub Actions工作流分析
     print("\n⚡ 分析GitHub Actions工作流...")
     if GITHUB_REPO:
         try:
