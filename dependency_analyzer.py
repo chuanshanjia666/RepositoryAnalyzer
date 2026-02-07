@@ -7,12 +7,16 @@ import argparse
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-# 全局配置抽离 - 统一维护可视化样式
-plt.rcParams["font.sans-serif"] = ["SimHei", "DejaVu Sans", "Arial Unicode MS"]  # 兼容不同系统中文
-plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
-plt.rcParams["figure.figsize"] = (14, 7)   # 优化图表尺寸
-plt.rcParams["figure.dpi"] = 100           # 默认DPI
-plt.rcParams["savefig.dpi"] = 300          # 保存图片DPI
+
+plt.rcParams['font.sans-serif'] = ['Source Han Sans CN', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', 'SimHei', 'DejaVu Sans']
+plt.rcParams['axes.unicode_minus'] = False
+
+# # 全局配置抽离 - 统一维护可视化样式
+# plt.rcParams["font.sans-serif"] = ["SimHei", "DejaVu Sans", "Arial Unicode MS"]  # 兼容不同系统中文
+# plt.rcParams["axes.unicode_minus"] = False  # 解决负号显示问题
+# plt.rcParams["figure.figsize"] = (14, 7)   # 优化图表尺寸
+# plt.rcParams["figure.dpi"] = 100           # 默认DPI
+# plt.rcParams["savefig.dpi"] = 300          # 保存图片DPI
 
 # 必要工具映射（工具名: 安装命令）
 REQUIRED_TOOLS = {
@@ -97,16 +101,35 @@ class DependencyAnalyzer:
             try:
                 return json.loads(result.stdout)
             except json.JSONDecodeError:
-                # 尝试清理非JSON内容
-                cleaned_output = '\n'.join(
-                    line for line in result.stdout.split('\n') 
-                    if not line.startswith(('INFO', 'WARNING', 'ERROR', 'DEBUG'))
-                )
+                # 尝试清理非JSON内容，特别处理safety的输出
+                lines = result.stdout.split('\n')
+                cleaned_lines = []
+                json_started = False
+
+                for line in lines:
+                    # 跳过装饰性行和空行
+                    if (line.startswith(('+', '=', 'INFO', 'WARNING', 'ERROR', 'DEBUG', 'DEPREC'))
+                        or not line.strip()):
+                        continue
+
+                    # 如果找到了可能的JSON开始
+                    if line.strip().startswith('{') or line.strip().startswith('['):
+                        json_started = True
+
+                    if json_started:
+                        cleaned_lines.append(line)
+
+                cleaned_output = '\n'.join(cleaned_lines)
                 if cleaned_output:
                     try:
                         return json.loads(cleaned_output)
                     except:
                         pass
+
+                # 特殊处理safety无漏洞的情况
+                if "safety" in desc and ("No vulnerabilities found" in result.stdout or "DEPREC" in result.stdout):
+                    return {"vulnerabilities": []}
+
                 print(f"⚠️  {desc}返回非JSON格式（前200字符）：{result.stdout[:200]}")
                 return None
                 
