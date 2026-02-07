@@ -11,6 +11,7 @@ from code_analyzer import AdvancedRadonAnalyzer
 from dependency_analyzer import DependencyAnalyzer
 from vulnerability_scanner import AdvancedVulnerabilityScanner
 from github_issue_analyzer import GitHubIssueAnalyzer
+from github_actions_analyzer import GitHubActionsAnalyzer
 
 # ========== 全局配置（统一规范） ==========
 GIT_URL = "https://github.com/Neutree/COMTool.git"
@@ -135,6 +136,53 @@ if __name__ == "__main__":
             print(f"   ❌ GitHub分析失败: {str(e)}")
     else:
         print("   ⚠️  未配置GitHub仓库，跳过issue分析")
+
+    # 4.5 GitHub Actions工作流分析
+    print("\n⚡ 分析GitHub Actions工作流...")
+    if GITHUB_REPO:
+        try:
+            # 解析owner和repo
+            owner, repo = GITHUB_REPO.split('/')
+            actions_analyzer = GitHubActionsAnalyzer(
+                repo_owner=owner,
+                repo_name=repo,
+                output_dir=REPORT_DIR,
+                token=GITHUB_TOKEN
+            )
+
+            # 获取并分析工作流
+            print(f"   获取 {GITHUB_REPO} 的Actions工作流...")
+            workflows = actions_analyzer.get_workflows()
+
+            if workflows:
+                security_issues = actions_analyzer.analyze_workflow_security(workflows)
+                efficiency_metrics = actions_analyzer.analyze_workflow_efficiency(workflows)
+
+                # 获取运行记录并分析趋势
+                workflow_runs = actions_analyzer.get_workflow_runs(days_back=360)
+                trends = actions_analyzer.analyze_workflow_trends(workflow_runs)
+
+                actions_analyzer.save_results(security_issues, efficiency_metrics, trends)
+                actions_analyzer.visualize_results(security_issues, efficiency_metrics, trends)
+
+                # 显示Actions分析摘要
+                if security_issues:
+                    total_issues = sum(issue['total_issues'] for issue in security_issues)
+                    print(f"   ⚠️  发现 {total_issues} 个Actions安全问题")
+                    high_risk_count = sum(issue['severity_counts']['high'] for issue in security_issues)
+                    if high_risk_count > 0:
+                        print(f"      高风险: {high_risk_count} 个")
+                else:
+                    print("   ✅ 未发现Actions安全问题")
+
+                print(f"   📊 分析了 {len(workflows)} 个工作流，{len(workflow_runs)} 次运行记录")
+            else:
+                print("   ⚠️  未获取到GitHub Actions工作流")
+
+        except Exception as e:
+            print(f"   ❌ GitHub Actions分析失败: {str(e)}")
+    else:
+        print("   ⚠️  未配置GitHub仓库，跳过Actions分析")
 
     # 最终提示
     print("\n🎉 所有分析完成！")
