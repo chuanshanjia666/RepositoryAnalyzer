@@ -74,6 +74,7 @@ RepositoryAnalyzer/
 ├── code_analyzer.py                  # 代码复杂度分析
 ├── dependency_analyzer.py            # 依赖关系分析
 ├── vulnerability_scanner.py          # 安全漏洞扫描
+├── pr_analysis.py                    # PR 分析核心模块
 ├── repo/                             # 克隆的仓库存储目录
 ├── reports/                          # 分析报告输出目录
 └── requirements.txt                  # 项目依赖
@@ -120,7 +121,11 @@ RepositoryAnalyzer/
 - 创建 HTML 报告
 - 数据可视化展示
 - 用户体验优化
-
+### 6.pr分析
+- 量化PR处理效率
+- 评估PR质量
+- 协作分析
+- 可视化结果
 ## 🎯 使用场景
 
 - **项目健康度评估**：定期分析项目的技术债务和代码质量
