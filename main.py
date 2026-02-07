@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     # 5.4 GitHub安全issue分析 - 整合最优逻辑，移除重复代码
     print("\n🐙 分析GitHub安全issues...")
-    if GITHUB_REPO and GITHUB_TOKEN:
+    if GITHUB_REPO:
         try:
             # 解析owner和repo
             owner, repo_name = GITHUB_REPO.split('/')
@@ -221,8 +221,6 @@ if __name__ == "__main__":
 
         except Exception as e:
             print(f"   ❌ GitHub分析失败: {str(e)[:200]}")
-    elif GITHUB_REPO and not GITHUB_TOKEN:
-        print("   ⚠️  未配置GitHub Token，跳过issue分析（配置GITHUB_TOKEN环境变量可启用）")
     else:
         print("   ⚠️  未配置GitHub仓库，跳过issue分析")
 

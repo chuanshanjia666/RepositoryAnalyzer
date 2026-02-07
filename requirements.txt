@@ -7,3 +7,5 @@ bandit
 radon
 pytest
 pytest-cov
+pipdeptree
+safety
