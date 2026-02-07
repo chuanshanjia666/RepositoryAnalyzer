@@ -17,38 +17,29 @@
 \addbibresource{sections/reference.bib}
 
 % 论文信息设置
-\ctitle{大连理工大学学位论文 \\ XeLaTeX 模板设计与实现}
-\cdegree{硕士学位论文}
-\cauthor{作者姓名}
-\cauthorno{2020000000}
-\csupervisor{导师姓名\quad 教授}
-\csubject{专业名称}
-\cschool{学院（学部）名称}
+\ctitle{基于多维数据的软件仓库分析工具\\设计与实现}
+\cdegree{可信开源软件大作业报告}
+\cauthor{开发者}
+\cauthorno{20240001}
+\csupervisor{指导教师\quad 教授}
+\csubject{软件工程}
+\cschool{软件学院}
 \creviewer{评阅教师}
-\cdate{2024年6月}
+\cdate{2026年2月}
 \cabstract{
-    这里是中文摘要内容。本论文主要介绍了大连理工大学学位论文XeLaTeX模板的设计与实现过程。
-    通过分析现有模板的不足，结合现代LaTeX技术，重新设计了一个基于.cls文档类的模板，
-    提高了模板的易用性、可维护性和编译效率。
+    随着开源软件的蓬勃发展，如何高效地评估代码质量、理解项目演进历史以及保障软件供应链安全成为重要挑战。本文设计并实现了一款综合性的软件仓库分析工具，旨在从 Git 提交历史、代码静态质量以及 GitHub 协作平台数据三个维度对软件项目进行全方位的画像。
 
-    本文首先回顾了LaTeX在学术写作中的应用现状，然后详细阐述了模板的设计思路和实现细节，
-    包括文档类结构、格式设置、宏包集成等方面。最后，通过对比测试验证了新模板的优越性。
+    在 Git 分析方面，工具实现了交互式的提交历史可视化及多维度的贡献者统计；在代码分析方面，集成了复杂度计算、依赖树解析及安全漏洞扫描功能，能够自动发现潜在的代码缺陷与安全风险；在 GitHub 平台分析方面，针对 Issue、Pull Request 及 CI/CD 工作流（Actions）进行了深度挖掘，评估了项目的社区活跃度与流程安全性。实际测试表明，该工具能够生成直观的图表与详细的分析报告，为开发者和项目管理者提供了有价值的数据支持。
 }
-\ckeywords{XeLaTeX；学位论文模板；文档类；自动化排版}
+\ckeywords{代码分析；Git可视化；软件质量；GitHub Actions；漏洞扫描}
 
-\etitle{Design and Implementation of XeLaTeX Template for Dalian University of Technology}
+\etitle{Design and Implementation of Multi-dimensional Software Repository Analysis Tool}
 \eabstract{
-    This is the English abstract. This thesis mainly introduces the design and implementation
-    of the XeLaTeX template for Dalian University of Technology degree thesis. Through analyzing
-    the shortcomings of existing templates and combining modern LaTeX technology, a new template
-    based on .cls document class is redesigned to improve the usability, maintainability and
-    compilation efficiency of the template.
+    With the booming development of open source software, efficiently evaluating code quality, understanding project evolution history, and ensuring software supply chain security have become important challenges. This thesis designs and implements a comprehensive software repository analysis tool aimed at profiling software projects from three dimensions: Git commit history, static code quality, and GitHub collaboration platform data.
 
-    This paper first reviews the current application status of LaTeX in academic writing,
-    then elaborates the design ideas and implementation details of the template, including
-    document class structure, format settings, package integration, etc. Finally, the superiority
-    of the new template is verified through comparative testing.
+    In terms of Git analysis, the tool implements interactive commit history visualization and multi-dimensional contributor statistics. For code analysis, it integrates complexity calculation, dependency tree parsing, and security vulnerability scanning to automatically discover potential code defects and security risks. Regarding GitHub platform analysis, it conducts deep mining on Issues, Pull Requests, and CI/CD workflows (Actions) to evaluate community activity and process security. Practical tests show that the tool can generate intuitive charts and detailed analysis reports, providing valuable data support for developers and project managers.
 }
+\ekeywords{Code Analysis; Git Visualization; Software Quality; GitHub Actions; Vulnerability Scanning}
 \ekeywords{XeLaTeX; thesis template; document class; automated typesetting}
 
 % 文档正文
@@ -97,11 +88,11 @@
 \cleardoublepage
 
 % 参考文献（使用 biblatex）
-\wuhao
-\phantomsection
-\addcontentsline{toc}{chapter}{参考文献}
-\printbibliography[title=参考文献]
-\cleardoublepage
+% \wuhao
+% \phantomsection
+% \addcontentsline{toc}{chapter}{参考文献}
+% \printbibliography[title=参考文献]
+% \cleardoublepage
 
 %附录
 \defaultfont

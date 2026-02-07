@@ -2,7 +2,107 @@
 \label{chap01}
 \section{基于gitgraph的git提交历史可视化}
 
+本分析工具包含一个 \texttt{html\_generator.py} 模块，用于生成 Git 提交历史的可视化报告。该模块通过读取 Git 仓库的提交日志（包含哈希值、作者、日期、提交信息及父提交关系），并将这些数据注入到 HTML 模板中。
 
-
+前端可视化采用了 \texttt{gitgraph.js} 开源库。该库能够以美观的图形方式展示 Git 的分支结构、合并历史以及提交节点。生成的 \texttt{git\_tree.html} 文件支持交互式浏览，用户可以直观地查看项目的演进路线、分支合并情况以及各开发者的提交记录。
 
 \section{多维度git仓库分析}
+
+本节详细介绍 \texttt{analyze.py} 模块所实现的多维度 Git 仓库分析功能。该模块旨在通过量化数据揭示项目的开发节奏、团队结构及代码演进规律。
+
+\subsection{实现技术与工具}
+
+分析工具主要基于 Python 语言开发，核心利用了以下开源库：
+\begin{itemize}
+    \item \textbf{GitPython}：用于与本地 Git 仓库进行交互。通过 `git.Repo` 对象，工具能够遍历提交历史（`iter\_commits`），提取包括提交哈希、作者、时间戳、提交信息及文件变更统计（`commit.stats`）在内的元数据。
+    \item \textbf{Matplotlib}：作为主要的可视化引擎，用于绘制柱状图、折线图、饼图及直方图。工具针对中文字符进行了专门配置（如加载 `SimHei` 或 `Source Han Sans CN` 字体），确保生成的图表在各种系统环境中均能正确显示中文标签。
+    \item \textbf{Pandas}：用于高效的数据处理与分析，特别是在进行时间序列分析（如 PR 处理周期）时，利用 DataFrame 进行数据的聚合、重采样与统计。
+    \item \textbf{Collections (Counter)}：Python 内置的高效计数器，用于对作者提交次数、关键词频率等数据进行快速聚合。
+\end{itemize}
+
+\subsection{分析维度详解}
+
+\subsubsection{开发活跃度分析}
+
+开发活跃度是衡量项目生命周期的重要指标。工具从“宏观月度趋势”和“微观时段分布”两个层面进行了分析。
+
+\textbf{月度活跃度趋势}：
+通过提取每条提交记录的日期并截取至月份（YYYY-MM），统计每月的提交总数。如图 \ref{fig:monthly_activity} 所示，该分析能够清晰地反映出项目的起步期、爆发期及平稳维护期，帮助识别特定的开发冲刺活动。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_monthly.png}
+    \caption{项目月度提交活跃度趋势}
+    \label{fig:monthly_activity}
+\end{figure}
+
+\textbf{全天时段提交分布}：
+该分析通过提取提交时间的小时属性（0-23h），绘制了开发者的工作习惯图谱。如图 \ref{fig:hourly_activity} 所示，这不仅能反映出主力团队的工作时区，还能揭示是否存在高强度的加班或夜间突击开发情况。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_hourly.png}
+    \caption{全天各时段提交频率分布}
+    \label{fig:hourly_activity}
+\end{figure}
+
+\subsubsection{贡献者画像分析}
+
+为了了解团队结构，工具对 Git 提交中的 `author` 字段进行了清洗和统计。
+
+\textbf{核心贡献者统计}：
+利用 `Counter` 统计各作者的提交次数，并截取前 10 名生成条形图（图 \ref{fig:author_stats}）。这有助于识别项目的“核心维护者”以及社区参与的广度。在多人协作项目中，通常遵循“二八定律”，即大部分代码由少数核心成员提交。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_authors.png}
+    \caption{前 10 名作者提交贡献统计}
+    \label{fig:author_stats}
+\end{figure}
+
+\subsubsection{代码演进与质量分析}
+
+代码量的变化直接反映了软件的成长过程。
+
+\textbf{代码行数 (LOC) 演变}：
+通过累加每次提交的 `insertions`（新增行数）和 `deletions`（删除行数），计算出项目净代码行数的随时间变化的累计曲线（图 \ref{fig:loc_growth}）。陡峭的上升通常对应新功能的引入，而平缓或下降则可能意味着重构或死代码清理。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_loc.png}
+    \caption{代码库净行数演变趋势}
+    \label{fig:loc_growth}
+\end{figure}
+
+此外，工具还分析了\textbf{代码增删趋势}（图 \ref{fig:ins_del_trend}），分别展示了新增和删除的波动情况。如果某一时间段内“删除”曲线显著升高，通常标志着重大的架构调整或技术债务偿还。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_ins_del_trend.png}
+    \caption{代码新增与删除行数趋势对照}
+    \label{fig:ins_del_trend}
+\end{figure}
+
+\subsubsection{提交行为语义分析}
+
+为了理解开发者的主要工作内容，工具对 Commit Message 进行了文本挖掘。
+
+\textbf{关键词分布分析}：
+针对中文开发环境，工具定义了一组特定的关键词映射（如 "新增/Add"、"修复/Fix"、"优化/Refactor"）。通过对提交信息进行模式匹配，生成了关键词分布饼图（图 \ref{fig:keywords}）。这一比例直观地展示了项目是处于快速功能迭代阶段（“新增”占比较高）还是稳定维护阶段（“修复”占比较高）。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{comtool_stats_cn_keywords.png}
+    \caption{提交信息高频关键词分布}
+    \label{fig:keywords}
+\end{figure}
+
+\textbf{修改热点分析}：
+通过统计每次提交中涉及的文件路径，工具识别出了修改频率最高的目录或模块（图 \ref{fig:hotspots}）。这些“热点”区域往往是业务逻辑最复杂、变更最频繁的部分，也是潜在 Bug 的高发区，需要重点关注。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_hotspots.png}
+    \caption{最常被修改的代码目录 (热点分析)}
+    \label{fig:hotspots}
+\end{figure}

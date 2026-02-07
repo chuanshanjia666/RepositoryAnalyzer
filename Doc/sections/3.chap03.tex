@@ -1,10 +1,67 @@
 \chapter{github仓库分析}
 \label{chap03}
-\section{github pr分析}
 
+本章介绍基于 GitHub API 的仓库数据挖掘与分析。依托 \texttt{PyGithub} 库，工具实现了对 Pull Request 协作流程、Issue 问题追踪以及 GitHub Actions CI/CD 工作流的深度透视。
 
-\section{github issue分析}
+\section{GitHub PR (Pull Request) 分析}
 
+Pull Request 是开源项目协作的核心载体，其处理效率直接反映了社区的活跃度与维护者的响应能力。\texttt{pr\_analysis.py} 模块主要实现了以下维度的分析：
 
+\subsection{生命周期与状态统计}
+工具抓取了仓库的全量 PR 数据，计算了 PR 的合并率（Merged Rate）与拒绝率（Rejected Rate）。如图 \ref{fig:pr_analysis} 所示，左侧饼图直观展示了 PR 的最终流向状态。
 
-\section{github action分析}
+\subsection{僵尸 PR (Zombie PRs) 识别}
+为了帮助维护者清理积压任务，模块通过设定时间阈值（默认为 7 天无活动），识别出长期未处理的 "Zombie PRs"。这能够提醒社区管理者关注那些被遗忘的贡献。
+
+\subsection{审查效率评估}
+分析器计算了每个 PR 从创建到关闭/合并的平均耗时（平均生命周期），以及平均 Review 评论数。这些指标量化了代码审查流程的效率与质量。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{pr_analysis_report.png}
+    \caption{Pull Request 状态分布与审查效率仪表盘}
+    \label{fig:pr_analysis}
+\end{figure}
+
+\section{GitHub Issue 安全分析}
+
+Issue 不仅是 Bug 报告的入口，也是发现潜在安全风险的重要渠道。\texttt{github\_issue\_analyzer.py} 模块专注于从海量 Issue 中挖掘安全线索。
+
+\subsection{安全关键词挖掘}
+该分析器定义了一套覆盖广泛的安全关键词词典（如 \textit{xss, injection, vulnerability, CVE, rce, 溢出} 等）。它自动遍历 Issue 的标题、正文及标签，筛选出可能涉及安全漏洞的条目。
+
+\subsection{趋势与分类统计}
+图 \ref{fig:issue_analysis} 展示了分析结果。
+\begin{itemize}
+    \item \textbf{趋势分析}：右上角的折线图展示了近期 Issue 的提交与关闭趋势，反映了项目的问题吞吐量。
+    \item \textbf{安全占比}：右下角的饼图则突出了安全相关 Issue 在整体问题中的占比，帮助安全团队快速评估项目的风险暴露面。
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{github_issue_analysis_v2.png}
+    \caption{Issue 趋势与安全相关性分析}
+    \label{fig:issue_analysis}
+\end{figure}
+
+\section{GitHub Actions 工作流分析}
+
+GitHub Actions 是现代项目自动化的基石。\texttt{github\_actions\_analyzer.py} 模块旨在评估 CI/CD 流程的安全与效率。
+
+\subsection{工作流安全性检测}
+工具内置了基于正则表达式的风险模式库，对 `.github/workflows` 下的 YAML 文件进行静态扫描。主要检测：
+\begin{itemize}
+    \item \textbf{高危模式}：如使用 \texttt{curl | bash} 直接执行远程脚本，或 \texttt{pull\_request\_target} 事件的不当使用。
+    \item \textbf{供应链风险}：如引用第三方 Action 时使用可变的 version tag 而非不可变的 commit hash。
+    \item \textbf{权限配置}：检查是否存在过宽的权限授予（如默认 write-all）。
+\end{itemize}
+
+\subsection{运行效率分析}
+通过分析最近的工作流运行记录（Workflow Runs），统计了运行成功率与平均耗时。图 \ref{fig:actions_analysis} 综合展示了工作流的健康状况（成功/失败比例）以及各项安全指标的检测结果。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{github_actions_analysis.png}
+    \caption{GitHub Actions 工作流安全与效率分析}
+    \label{fig:actions_analysis}
+\end{figure}
