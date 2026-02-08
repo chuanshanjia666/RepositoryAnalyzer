@@ -4,6 +4,7 @@ import git
 import sys
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
 
 # ========== 统一导入所有模块 ==========
 from html_generator import generate_git_tree_html
@@ -19,24 +20,33 @@ from pr_analysis import analyze_pr_repository
 # ========== 全局配置（统一规范） ==========
 # 路径配置使用Path对象，提升跨平台兼容性
 BASE_DIR = Path(__file__).parent
-GIT_URL = "https://github.com/Neutree/COMTool.git"
-REPO_PATH = BASE_DIR / "repo"
-REPORT_DIR = BASE_DIR / "reports"
-PREFIX = "comtool_"
+
+# 加载 .env 文件中的环境变量
+dotenv_path = BASE_DIR / '.env'
+if dotenv_path.exists():
+    load_dotenv(dotenv_path)
+    print(f"📋 已加载配置文件: {dotenv_path}")
+else:
+    print(f"⚠️  未找到 .env 文件: {dotenv_path}")
+
+# 从环境变量读取配置，提供默认值
+GIT_URL = os.getenv("GIT_URL", "https://github.com/Neutree/COMTool.git")
+REPO_PATH = Path(os.getenv("REPO_PATH", str(BASE_DIR / "repo")))
+REPORT_DIR = Path(os.getenv("REPORT_DIR", str(BASE_DIR / "reports")))
+PREFIX = os.getenv("PREFIX", "comtool_")
 
 # GitHub配置（可选）
-GITHUB_REPO = "Neutree/COMTool"  # 格式: owner/repo
-# 建议从环境变量读取Token，更安全
+GITHUB_REPO = os.getenv("GITHUB_REPO", "Neutree/COMTool")  # 格式: owner/repo
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or None
 
 # PR分析配置
-PR_ANALYSIS_ENABLED = True  # 是否启用PR分析
-PR_ANALYSIS_REPO = GITHUB_REPO  # PR分析的仓库，默认与GitHub repo相同
-PR_ANALYSIS_DAYS_THRESHOLD = 7  # 僵尸PR的时间阈值（天）  
+PR_ANALYSIS_ENABLED = os.getenv("PR_ANALYSIS_ENABLED", "True").lower() == "true"
+PR_ANALYSIS_REPO = os.getenv("PR_ANALYSIS_REPO", GITHUB_REPO)  # PR分析的仓库，默认与GitHub repo相同
+PR_ANALYSIS_DAYS_THRESHOLD = int(os.getenv("PR_ANALYSIS_DAYS_THRESHOLD", "7"))  # 僵尸PR的时间阈值（天）
 
 # 全局常量
-MAX_COMMITS = 300  # 最大分析提交数
-GITHUB_ISSUE_DAYS = 180  # GitHub Issue分析时间范围
+MAX_COMMITS = int(os.getenv("MAX_COMMITS", "300"))  # 最大分析提交数
+GITHUB_ISSUE_DAYS = int(os.getenv("GITHUB_ISSUE_DAYS", "180"))  # GitHub Issue分析时间范围
 
 def clone_repo(url, path):
     """克隆Git仓库（若不存在），增强异常处理和用户提示"""

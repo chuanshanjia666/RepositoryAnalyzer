@@ -10,3 +10,4 @@ pytest-cov
 pipdeptree
 safety
 pandas
+python-dotenv
