@@ -1,10 +1,9 @@
 import os
 import time
 import json
-import logging
 import pandas as pd
 import matplotlib
-matplotlib.use('Agg')  # 必须在导入pyplot前设置后端
+# matplotlib.use('Agg')  # 必须在导入pyplot前设置后端
 import matplotlib.pyplot as plt
 from github import Github, GithubException
 from datetime import datetime, timedelta
@@ -12,7 +11,6 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 import tempfile
 import requests
-from dotenv import load_dotenv
 from pathlib import Path
 import shutil
 import numpy as np
@@ -21,15 +19,6 @@ import warnings
 
 # 忽略非关键警告
 warnings.filterwarnings("ignore")
-
-load_dotenv()  # 加载.env文件中的环境变量
-
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @dataclass
 class PRAnalyzerConfig:
@@ -59,7 +48,7 @@ class GitHubConfig:
                 self.client = Github(self.token, retry=3, timeout=15)
             else:
                 self.client = Github(retry=3, timeout=15)
-                logger.warning("未配置GitHub token，将使用无认证模式（API配额受限）")
+                print("⚠️  未配置GitHub token，将使用无认证模式（API配额受限）")
             
             # 手动设置User-Agent（兼容不同版本的Requester实现）
             self._set_user_agent()
@@ -68,7 +57,7 @@ class GitHubConfig:
             self._check_rate_limit()
             
         except Exception as e:
-            logger.error(f"GitHub token验证失败: {str(e)}")
+            print(f"❌ GitHub token验证失败: {str(e)}")
             raise
 
     def _set_user_agent(self):
@@ -88,7 +77,7 @@ class GitHubConfig:
                     self.client.session.headers['User-Agent'] = user_agent
             except:
                 # 忽略设置失败，不影响核心功能
-                logger.warning("无法设置User-Agent，可能影响API访问（非关键错误）")
+                print("⚠️  无法设置User-Agent，可能影响API访问（非关键错误）")
 
     def _check_rate_limit(self):
         """兼容不同版本获取API配额信息"""
@@ -110,11 +99,11 @@ class GitHubConfig:
                 remaining = rate_data.get('rate', {}).get('remaining', 0)
                 limit = rate_data.get('rate', {}).get('limit', 0)
                 
-            logger.info(f"当前API配额: {remaining}/{limit}")
+            print(f"📊 当前API配额: {remaining}/{limit}")
             
         except Exception as e:
             # 配额检查失败不影响核心功能，仅警告
-            logger.warning(f"无法获取API配额信息: {str(e)}")
+            print(f"⚠️  无法获取API配额信息: {str(e)}")
 
 class PRDataFetcher:
     """PR 数据抓取类，增强限流处理、缓存策略和异常处理"""
@@ -135,7 +124,7 @@ class PRDataFetcher:
             os.makedirs(cache_dir, exist_ok=True)
             return cache_dir
         except Exception as e:
-            logger.warning(f"使用系统临时目录失败，改用当前目录: {str(e)}")
+            print(f"⚠️  使用系统临时目录失败，改用当前目录: {str(e)}")
             return ".cache"
             
     def _get_cache_file_path(self) -> str:
@@ -149,7 +138,7 @@ class PRDataFetcher:
         data_path = f"{self._get_cache_file_path()}.csv"
         
         if not (os.path.exists(meta_path) and os.path.exists(data_path)):
-            logger.debug("缓存文件不存在")
+            print("🔍 缓存文件不存在")
             return pd.DataFrame()
             
         try:
@@ -159,14 +148,14 @@ class PRDataFetcher:
             # 检查缓存是否过期
             cache_time = datetime.fromisoformat(meta["timestamp"])
             if datetime.now() - cache_time < timedelta(hours=self.config.cache_expiration_hours):
-                logger.info("使用缓存中的PR数据")
+                print("💾 使用缓存中的PR数据")
                 return pd.read_csv(data_path)
             else:
-                logger.info("缓存已过期，将重新抓取数据")
+                print("⏰ 缓存已过期，将重新抓取数据")
                 return pd.DataFrame()
                 
         except Exception as e:
-            logger.error(f"加载缓存失败: {str(e)}")
+            print(f"❌ 加载缓存失败: {str(e)}")
             return pd.DataFrame()
         
     def _save_to_cache(self, df: pd.DataFrame):
@@ -187,9 +176,9 @@ class PRDataFetcher:
                 
             # 保存数据
             df.to_csv(data_path, index=False)
-            logger.info(f"缓存已保存至 {data_path}")
+            print(f"✅ 缓存已保存至 {data_path}")
         except Exception as e:
-            logger.error(f"保存缓存失败: {str(e)}")
+            print(f"❌ 保存缓存失败: {str(e)}")
             
     def _handle_api_rate_limit(self, exception):
         """处理API限流，动态计算等待时间"""
@@ -198,14 +187,14 @@ class PRDataFetcher:
                 # 获取剩余配额重置时间
                 reset_time = datetime.fromtimestamp(self.github_client.rate_limiting_resettime)
                 wait_time = max((reset_time - datetime.now()).total_seconds(), self.config.retry_wait_base)
-                logger.warning(f"达到API限流，等待 {wait_time:.1f} 秒后重试...")
+                print(f"⏳ 达到API限流，等待 {wait_time:.1f} 秒后重试...")
                 time.sleep(wait_time)
                 self.current_attempt = 0  # 重置尝试计数器
                 return True
             except Exception as e:
-                logger.warning(f"动态计算限流等待时间失败，使用默认策略: {str(e)}")
+                print(f"⚠️  动态计算限流等待时间失败，使用默认策略: {str(e)}")
                 wait_time = self.config.retry_wait_base * (self.current_attempt + 1)  # 退避策略
-                logger.warning(f"达到API限流，等待 {wait_time} 秒后重试...")
+                print(f"达到API限流，等待 {wait_time} 秒后重试...")
                 time.sleep(wait_time)
                 return True
         return False
@@ -215,17 +204,17 @@ class PRDataFetcher:
         # 尝试从缓存加载
         df = self._load_from_cache()
         if not df.empty:
-            logger.info(f"从缓存加载到 {len(df)} 条PR数据")
+            print(f"💾 从缓存加载到 {len(df)} 条PR数据")
             return df
             
         # 缓存不存在或已过期，重新抓取数据
-        logger.info("开始重新抓取PR数据...")
+        print("🔄 开始重新抓取PR数据...")
         
         try:
             # 获取PR列表（分页处理）
             prs = self.repo.get_pulls(state="all", sort="created", direction="desc")
             total_prs = prs.totalCount
-            logger.info(f"需要抓取的PR总数: {total_prs}")
+            print(f"需要抓取的PR总数: {total_prs}")
             
             # 分批次处理
             batch_size = 100
@@ -245,7 +234,7 @@ class PRDataFetcher:
                         
                         # 进度显示
                         current = min(i + batch_size, total_prs)
-                        logger.info(f"已抓取 {current}/{total_prs} 个PR")
+                        print(f"已抓取 {current}/{total_prs} 个PR")
                         
                         break  # 成功获取批次数据，退出重试循环
                         
@@ -254,16 +243,16 @@ class PRDataFetcher:
                             retries += 1
                             continue
                         else:
-                            logger.error(f"抓取PR时发生GitHub错误: {str(e)}")
+                            print(f"抓取PR时发生GitHub错误: {str(e)}")
                             time.sleep(5)
                             break
                     except Exception as e:
-                        logger.error(f"抓取PR时发生未知错误: {str(e)}")
+                        print(f"抓取PR时发生未知错误: {str(e)}")
                         time.sleep(5)
                         break
 
             df = pd.DataFrame(self.pr_data)
-            logger.info(f"共抓取 {len(df)} 条PR数据")
+            print(f"共抓取 {len(df)} 条PR数据")
             
             # 保存到缓存
             self._save_to_cache(df)
@@ -271,10 +260,10 @@ class PRDataFetcher:
             return df
             
         except GithubException as e:
-            logger.error(f"获取PR列表时发生GitHub错误: {str(e)}")
+            print(f"获取PR列表时发生GitHub错误: {str(e)}")
             return pd.DataFrame()
         except Exception as e:
-            logger.error(f"获取PR列表时发生未知错误: {str(e)}")
+            print(f"获取PR列表时发生未知错误: {str(e)}")
             return pd.DataFrame()
 
     def _dynamic_sleep(self, current_count: int):
@@ -301,13 +290,13 @@ class PRDataFetcher:
                 else:
                     sleep_time = self.config.min_sleep_time
                     
-                logger.debug(f"API使用率: {usage_ratio*100:.1f}%, 休眠时间: {sleep_time:.1f}s")
+                print(f"API使用率: {usage_ratio*100:.1f}%, 休眠时间: {sleep_time:.1f}s")
                 time.sleep(sleep_time)
             else:
                 time.sleep(self.config.min_sleep_time)
                 
         except Exception as e:
-            logger.warning(f"动态休眠策略失败，使用默认休眠时间: {str(e)}")
+            print(f"动态休眠策略失败，使用默认休眠时间: {str(e)}")
             time.sleep(self.config.min_sleep_time)
 
     def _extract_pr_info(self, pr) -> Dict:
@@ -337,16 +326,16 @@ class PRDataFetcher:
             # 验证时间戳有效性（考虑系统时间错误的情况）
             current_time = datetime.now()
             if pr_info["created_at"] and (pr_info["created_at"] > current_time):
-                logger.warning(f"PR {pr.number} 创建时间未来时间，已修正")
+                print(f"PR {pr.number} 创建时间未来时间，已修正")
                 pr_info["created_at"] = None
                 
             if pr_info["merged_at"] and pr_info["created_at"] and (pr_info["merged_at"] < pr_info["created_at"]):
-                logger.warning(f"PR {pr.number} 合并时间早于创建时间，已修正")
+                print(f"PR {pr.number} 合并时间早于创建时间，已修正")
                 pr_info["merged_at"] = None
                 
             return pr_info
         except Exception as e:
-            logger.error(f"PR信息提取失败: {str(e)}")
+            print(f"PR信息提取失败: {str(e)}")
             return {}
 
 
@@ -408,7 +397,7 @@ class PRMetricsCalculator:
         }
         
         if len(self.df) == 0:
-            logger.warning("无PR数据可分析")
+            print("无PR数据可分析")
             return metrics
 
         try:
@@ -449,7 +438,7 @@ class PRMetricsCalculator:
             return metrics
             
         except Exception as e:
-            logger.error(f"指标计算失败: {str(e)}")
+            print(f"指标计算失败: {str(e)}")
             return metrics
 
     def _count_open_pr(self) -> int:
@@ -457,7 +446,7 @@ class PRMetricsCalculator:
         try:
             return len(self.df[self.df["state"] == "open"])
         except Exception as e:
-            logger.error(f"统计开放PR失败: {str(e)}")
+            print(f"统计开放PR失败: {str(e)}")
             return 0
 
     def _count_merged_pr(self) -> int:
@@ -465,7 +454,7 @@ class PRMetricsCalculator:
         try:
             return len(self.df[self.df["merged_at"].notna()])
         except Exception as e:
-            logger.error(f"统计已合并PR失败: {str(e)}")
+            print(f"统计已合并PR失败: {str(e)}")
             return 0
 
     def _count_closed_unmerged(self) -> int:
@@ -473,7 +462,7 @@ class PRMetricsCalculator:
         try:
             return len(self.df[(self.df["state"] == "closed") & (self.df["merged_at"].isna())])
         except Exception as e:
-            logger.error(f"统计未合并关闭PR失败: {str(e)}")
+            print(f"统计未合并关闭PR失败: {str(e)}")
             return 0
 
     def _calculate_zombie_pr_metrics(self) -> Dict:
@@ -487,7 +476,7 @@ class PRMetricsCalculator:
                 "zombie_pr_rate": zombie_rate
             }
         except Exception as e:
-            logger.error(f"僵尸PR计算失败: {str(e)}")
+            print(f"僵尸PR计算失败: {str(e)}")
             return {"zombie_pr_count": 0, "zombie_pr_rate": 0}
 
     def _calculate_review_duration_metrics(self) -> Dict:
@@ -525,7 +514,7 @@ class PRMetricsCalculator:
                 "median_review_hours": round(median_review_hours, 2)
             }
         except Exception as e:
-            logger.error(f"审核时长计算失败: {str(e)}")
+            print(f"审核时长计算失败: {str(e)}")
             return {
                 "avg_review_hours": 0,
                 "avg_review_hours_filtered": 0,
@@ -538,7 +527,7 @@ class PRMetricsCalculator:
             avg_comments = self.df["total_comments"].mean()
             return round(avg_comments, 2) if not pd.isna(avg_comments) else 0
         except Exception as e:
-            logger.error(f"平均评论数计算失败: {str(e)}")
+            print(f"平均评论数计算失败: {str(e)}")
             return 0
 
     def _calculate_commit_metrics(self) -> Dict:
@@ -558,7 +547,7 @@ class PRMetricsCalculator:
                 }
             }
         except Exception as e:
-            logger.error(f"提交指标计算失败: {str(e)}")
+            print(f"提交指标计算失败: {str(e)}")
             return {
                 "avg_commits": 0,
                 "avg_code_changes": {
@@ -574,7 +563,7 @@ class PRMetricsCalculator:
             author_counts = self.df["creator"].value_counts().to_dict()
             return {author: int(count) for author, count in author_counts.items()}
         except Exception as e:
-            logger.error(f"PR作者统计失败: {str(e)}")
+            print(f"PR作者统计失败: {str(e)}")
             return {}
 
     def _calculate_pr_by_label(self) -> Dict:
@@ -592,7 +581,7 @@ class PRMetricsCalculator:
             label_counts = Counter(all_labels)
             return dict(label_counts)
         except Exception as e:
-            logger.error(f"PR标签统计失败: {str(e)}")
+            print(f"PR标签统计失败: {str(e)}")
             return {}
 
     def _calculate_branch_analysis(self) -> Dict:
@@ -606,7 +595,7 @@ class PRMetricsCalculator:
                 "head_branches": {branch: int(count) for branch, count in head_branches.items()}
             }
         except Exception as e:
-            logger.error(f"分支分析失败: {str(e)}")
+            print(f"分支分析失败: {str(e)}")
             return {"base_branches": {}, "head_branches": {}}
 
     def _calculate_pr_lifecycle_metrics(self) -> Dict:
@@ -634,7 +623,7 @@ class PRMetricsCalculator:
                 "pr_lifetime_distribution": dict(distribution_counts.astype(int))
             }
         except Exception as e:
-            logger.error(f"PR生命周期计算失败: {str(e)}")
+            print(f"PR生命周期计算失败: {str(e)}")
             return {
                 "time_to_close": 0,
                 "pr_lifetime_distribution": {}
@@ -654,31 +643,33 @@ class PRVisualizer:
     def _setup_chinese_font(self):
         """设置中文显示支持，尝试多种字体"""
         try:
-            # 尝试检测系统可用字体
-            available_fonts = matplotlib.font_manager.findSystemFonts()
-            font_names = [matplotlib.font_manager.FontProperties(fname=fname).get_name() for fname in available_fonts]
-            
-            # 优先选择常见中文字体
-            chinese_fonts = [
-                'SimHei', 'FangSong', 'KaiTi', 'Microsoft YaHei',
-                'Source Han Sans CN', 'Arial Unicode MS', 'sans-serif'
-            ]
-            
-            # 选择第一个可用字体
-            for font in chinese_fonts:
-                if font in font_names:
-                    plt.rcParams['font.sans-serif'] = [font]
-                    plt.rcParams['axes.unicode_minus'] = False
-                    logger.info(f"使用中文字体: {font}")
-                    return
-            
-            # 如果没有可用中文字体，使用备用字体
-            plt.rcParams['font.sans-serif'] = [self.config.font_fallback]
+            plt.rcParams['font.sans-serif'] = ['Source Han Sans CN', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', 'SimHei', 'DejaVu Sans']
             plt.rcParams['axes.unicode_minus'] = False
-            logger.warning(f"使用备用字体: {self.config.font_fallback}")
+            # # 尝试检测系统可用字体
+            # available_fonts = matplotlib.font_manager.findSystemFonts()
+            # font_names = [matplotlib.font_manager.FontProperties(fname=fname).get_name() for fname in available_fonts]
+            
+            # # 优先选择常见中文字体
+            # chinese_fonts = [
+            #     'SimHei', 'FangSong', 'KaiTi', 'Microsoft YaHei',
+            #     'Source Han Sans CN', 'Arial Unicode MS', 'sans-serif'
+            # ]
+            
+            # # 选择第一个可用字体
+            # for font in chinese_fonts:
+            #     if font in font_names:
+            #         plt.rcParams['font.sans-serif'] = [font]
+            #         plt.rcParams['axes.unicode_minus'] = False
+            #         print(f"使用中文字体: {font}")
+            #         return
+            
+            # # 如果没有可用中文字体，使用备用字体
+            # plt.rcParams['font.sans-serif'] = [self.config.font_fallback]
+            # plt.rcParams['axes.unicode_minus'] = False
+            # print(f"使用备用字体: {self.config.font_fallback}")
             
         except Exception as e:
-            logger.warning(f"中文字体设置失败: {str(e)}")
+            print(f"中文字体设置失败: {str(e)}")
 
     def generate_visualization(self, save_path: str = "pr_analysis_report.png"):
         """生成可视化报告"""
@@ -703,10 +694,10 @@ class PRVisualizer:
 
             plt.tight_layout()
             plt.savefig(save_path, dpi=300, bbox_inches="tight")
-            logger.info(f"可视化报告已保存至：{save_path}")
+            print(f"可视化报告已保存至：{save_path}")
             
         except Exception as e:
-            logger.error(f"可视化生成失败: {str(e)}")
+            print(f"可视化生成失败: {str(e)}")
         finally:
             plt.close()
 
@@ -734,7 +725,7 @@ class PRVisualizer:
             # 添加图例
             ax.legend(status_labels, loc="best", bbox_to_anchor=(0.5, 0, 0.5, 0.5))
         except Exception as e:
-            logger.error(f"状态分布图绘制失败: {str(e)}")
+            print(f"状态分布图绘制失败: {str(e)}")
 
     def _plot_zombie_pr_distribution(self, ax):
         """绘制僵尸PR分布柱状图"""
@@ -754,7 +745,7 @@ class PRVisualizer:
                 ax.text(bar.get_x() + bar.get_width()/2, height + 0.5, 
                        f'{int(height)}', ha='center', fontsize=10)
         except Exception as e:
-            logger.error(f"僵尸PR分布图绘制失败: {str(e)}")
+            print(f"僵尸PR分布图绘制失败: {str(e)}")
 
     def _plot_review_duration(self, ax):
         """绘制平均审核时长对比图"""
@@ -781,7 +772,7 @@ class PRVisualizer:
                 ax.text(len(values)-0.5, avg_filtered, f'过滤均值: {avg_filtered}', 
                        color='red', va='center')
         except Exception as e:
-            logger.error(f"审核时长图绘制失败: {str(e)}")
+            print(f"审核时长图绘制失败: {str(e)}")
 
     def _plot_code_changes(self, ax):
         """绘制代码变更统计"""
@@ -800,7 +791,7 @@ class PRVisualizer:
                 ax.text(i, v + 0.5, str(v), ha='center', fontsize=10)
                 
         except Exception as e:
-            logger.error(f"代码变更统计图绘制失败: {str(e)}")
+            print(f"代码变更统计图绘制失败: {str(e)}")
 
     def _plot_pr_per_author(self, ax):
         """绘制PR作者分布图"""
@@ -828,7 +819,7 @@ class PRVisualizer:
             ax.invert_yaxis()  # 从上到下按数量递减排序
             ax.grid(axis='x', linestyle='--', alpha=0.7)
         except Exception as e:
-            logger.error(f"PR作者分布图绘制失败: {str(e)}")
+            print(f"PR作者分布图绘制失败: {str(e)}")
 
     def _plot_pr_lifetime_distribution(self, ax):
         """绘制PR生命周期分布"""
@@ -854,7 +845,7 @@ class PRVisualizer:
             plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
             ax.grid(axis='y', linestyle='--', alpha=0.7)
         except Exception as e:
-            logger.error(f"PR生命周期分布图绘制失败: {str(e)}")
+            print(f"PR生命周期分布图绘制失败: {str(e)}")
 
 
 class PRReportGenerator:
@@ -933,9 +924,9 @@ class PRReportGenerator:
             with open(save_path, "w", encoding="utf-8") as f:
                 f.write(report)
 
-            logger.info(f"文字报告已保存至：{save_path}")
+            print(f"文字报告已保存至：{save_path}")
         except Exception as e:
-            logger.error(f"文字报告生成失败: {str(e)}")
+            print(f"文字报告生成失败: {str(e)}")
 
     def _generate_author_analysis(self) -> str:
         """生成PR作者分析部分"""
@@ -958,7 +949,7 @@ class PRReportGenerator:
             
             return table
         except Exception as e:
-            logger.error(f"作者分析生成失败: {str(e)}")
+            print(f"作者分析生成失败: {str(e)}")
             return ""
 
     def _generate_label_analysis(self) -> str:
@@ -982,7 +973,7 @@ class PRReportGenerator:
             
             return table
         except Exception as e:
-            logger.error(f"标签分析生成失败: {str(e)}")
+            print(f"标签分析生成失败: {str(e)}")
             return ""
 
     def _generate_branch_analysis(self) -> str:
@@ -1012,7 +1003,7 @@ class PRReportGenerator:
                 
             return f"### 目标分支分布\n{base_table}\n### 来源分支分布\n{head_table}"
         except Exception as e:
-            logger.error(f"分支分析生成失败: {str(e)}")
+            print(f"分支分析生成失败: {str(e)}")
             return ""
 
     def _generate_lifetime_analysis(self) -> str:
@@ -1031,7 +1022,7 @@ class PRReportGenerator:
             
             return table
         except Exception as e:
-            logger.error(f"生命周期分析生成失败: {str(e)}")
+            print(f"生命周期分析生成失败: {str(e)}")
             return ""
 
 
@@ -1055,42 +1046,71 @@ class PRAnalyzer:
     def run_analysis(self, save_reports: bool = True) -> Dict:
         """执行完整的PR分析流程"""
         try:
-            logger.info(f"开始分析流程 - 仓库: {self.repo_full_name}")
+            print(f"开始分析流程 - 仓库: {self.repo_full_name}")
             
             # 1. 数据抓取
-            logger.info("1. 数据抓取阶段")
+            print("1. 数据抓取阶段")
             fetcher = PRDataFetcher(self.github_config.client, self.repo_full_name, self.config)
             self.df = fetcher.fetch_pr_data()
 
             if len(self.df) == 0:
-                logger.warning("未获取到任何PR数据，请检查网络连接和API配额")
+                print("未获取到任何PR数据，请检查网络连接和API配额")
                 return {}
 
             # 2. 指标计算
-            logger.info("2. 指标计算阶段")
+            print("2. 指标计算阶段")
             calculator = PRMetricsCalculator(self.df, self.config)
             self.metrics = calculator.calculate_all_metrics()
             self.metrics['days_threshold'] = self.config.zombie_threshold_days  # 将阈值加入指标
 
             # 3. 生成可视化报告
             if save_reports:
-                logger.info("3. 生成可视化报告")
+                print("3. 生成可视化报告")
                 visualizer = PRVisualizer(self.df, self.metrics, self.repo_full_name, self.config)
                 viz_path = os.path.join(self.config.report_save_path, f"{self.repo_full_name.replace('/', '_')}_report.png")
                 visualizer.generate_visualization(viz_path)
 
                 # 4. 生成文字报告
-                logger.info("4. 生成文字报告")
+                print("4. 生成文字报告")
                 report_path = os.path.join(self.config.report_save_path, f"{self.repo_full_name.replace('/', '_')}_report.md")
                 reporter = PRReportGenerator(self.metrics, self.repo_full_name, self.config)
                 reporter.generate_text_report(report_path)
             
-            logger.info("分析流程完成")
+            print("分析流程完成")
             return self.metrics
             
         except Exception as e:
-            logger.error(f"分析流程失败: {str(e)}")
+            print(f"分析流程失败: {str(e)}")
             return {}
+
+def analyze_pr_repository(repo_full_name: str, days_threshold: int = 7, github_token: str = None, save_reports: bool = True) -> Dict:
+    """
+    分析GitHub仓库的PR数据（供main.py调用的入口函数）
+
+    :param repo_full_name: 仓库全名（如 "owner/repo"）
+    :param days_threshold: 僵尸PR的时间阈值（天）
+    :param github_token: GitHub访问令牌
+    :param save_reports: 是否保存报告文件
+    :return: 分析结果字典
+    """
+    try:
+        # 创建配置对象
+        config = PRAnalyzerConfig(
+            zombie_threshold_days=days_threshold,
+            outlier_filter_days=30,
+            report_save_path="reports"
+        )
+
+        # 创建分析器并执行分析
+        analyzer = PRAnalyzer(repo_full_name, config, github_token)
+        results = analyzer.run_analysis(save_reports=save_reports)
+
+        return results
+
+    except Exception as e:
+        print(f"❌ PR分析失败: {str(e)}")
+        return {}
+
 
 if __name__ == "__main__":
     # 示例用法
@@ -1099,8 +1119,8 @@ if __name__ == "__main__":
         outlier_filter_days=30,
         report_save_path="analysis_reports"
     )
-    
+
     analyzer = PRAnalyzer("octocat/Hello-World", config)
     results = analyzer.run_analysis()
-    
+
     print(f"分析结果: {json.dumps(results, indent=2, ensure_ascii=False)}")
