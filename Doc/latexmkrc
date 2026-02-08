@@ -1,49 +1,93 @@
-# 大连理工大学学位论文模板 latexmk 配置文件
+# 大连理工大学学位论文 LaTeXmk 配置文件 (.latexmkrc)
+# 适配系统：Windows/macOS/Linux | 编译引擎：XeLaTeX | 参考文献：Biber
+# 优化说明：增强兼容性、自动化程度，补充容错和跨平台支持
 
-# 设置主文件名
+########################### 核心编译配置 ###########################
+# 设置主文件名（无需后缀.tex），修改此处即可切换编译入口
 $main_filename = "main";
 
-# 使用 XeLaTeX 编译
-$pdflatex = 'xelatex -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error %O %S';
+# XeLaTeX 编译参数：
+# -shell-escape：启用外部命令（如tikz/字体加载），大工模板必开
+# -synctex=1：生成同步文件，支持正向/反向搜索（编辑器<->PDF）
+# -interaction=nonstopmode：出错不中断，适合自动化编译
+# -file-line-error：错误信息显示行号，便于定位问题
+# -8bit：兼容UTF-8编码（XeLaTeX核心需求）
+$pdflatex = 'xelatex -8bit -shell-escape -synctex=1 -interaction=nonstopmode -file-line-error %O %S';
 
-# 使用 biber 处理参考文献
-$biber = 'biber %O %S';
+# Biber 参考文献处理（大工模板主流参考文献工具）
+$biber = 'biber --validate-datamodel %O %S';  # 增加数据模型验证，提前发现参考文献格式错误
 
-# 自动生成PDF文件名
+########################### 自动化编译逻辑 ###########################
+# PDF输出模式：1=生成与主文件同名的PDF（如main.tex → main.pdf）
 $pdf_mode = 1;
 
-# 生成同步TeX文件，便于反向搜索
+# 最大编译次数：5次（足够处理交叉引用/目录/参考文献的迭代更新）
+$max_repeat = 5;
+
+# 最小编译次数：2次（确保目录、交叉引用至少更新一次）
+$min_repeat = 2;
+
+# 自动检测.bcf文件变化，触发Biber编译（无需手动执行biber）
+add_cus_dep('bcf', 'bbl', 0, 'biber');
+# 强制Biber编译后重新执行XeLaTeX（解决参考文献引用未更新问题）
+$execute_cmd = sub {
+    my ($cmd, $return_code) = @_;
+    if ($cmd =~ /biber/) {
+        $rerun = 1;  # Biber执行后标记需要重新编译
+    }
+    return $return_code;
+};
+
+########################### 输出与目录配置 ###########################
+# 编译产物分离：将辅助文件/PDF输出到build目录（保持源码目录整洁）
+# 注：启用前需先手动创建build目录（mkdir build），或取消下面两行注释自动创建
+# $out_dir = 'build';
+# $aux_dir = 'build';  # 辅助文件（.aux/.log等）单独存放
+
+# 同步文件生成（必开，编辑器反向搜索依赖）
 $synctex = 1;
 
-# 不停止编译，即使有错误也继续
-$max_repeat = 5;  # 最多重复编译5次
+########################### 跨平台PDF预览配置 ###########################
+# 自动识别操作系统，配置对应的PDF阅读器（无需手动修改）
+if ($^O =~ /MSWin32/) {
+    # Windows系统：优先使用SumatraPDF（支持反向搜索），其次是Adobe Acrobat
+    $pdf_previewer = 'start "" "SumatraPDF.exe" -reuse-instance %S';  # -reuse-instance：复用窗口，避免多开
+} elsif ($^O =~ /darwin/) {
+    # macOS系统：使用系统默认预览器（Preview）
+    $pdf_previewer = 'open -a Preview %S';
+} else {
+    # Linux系统：使用xdg-open（适配绝大多数桌面环境）
+    $pdf_previewer = 'xdg-open %S';
+}
 
-# 清理时保留的文件
-$clean_ext = "run.xml";
-
-# 自动检测是否需要运行 biber
-add_cus_dep('bcf', 'bbl', 0, 'biber');
-
-# 输出目录设置（如果需要）
-# $out_dir = 'build';
-
-# 日志文件设置
-$log_file = 'latexmk.log';
-
-# 编译完成后自动清理辅助文件
-# $clean_full_ext = "bbl blg run.xml";
-
-# PDF查看器设置（Linux）
-$pdf_previewer = 'start xdg-open';
-
-# Windows 系统设置
-# $pdf_previewer = 'start acroread';
-
-# macOS 系统设置
-# $pdf_previewer = 'open';
-
-# 编译后自动打开PDF（设为1启用）
+# 编译完成后自动打开PDF（0=关闭，1=开启）
 $post_compile_view = 0;
 
-# 编译后自动清理（设为1启用）
+########################### 清理配置 ###########################
+# 基础清理：保留run.xml（Biber必要文件），删除其他辅助文件
+$clean_ext = "run.xml";
+
+# 完整清理：删除所有编译产物（包括PDF），仅保留源码
+$clean_full_ext = "aux bbl blg bcf log out run.xml synctex.gz toc lof lot nav snm vrb fls fdb_latexmk pdf";
+
+# 编译完成后自动清理辅助文件（0=关闭，1=开启，建议调试完成后开启）
 $clean_after_view = 0;
+
+########################### 日志与容错配置 ###########################
+# 编译日志文件：记录完整编译过程，便于排查问题
+$log_file = 'latexmk.log';
+
+# 错误处理：编译失败时保留中间文件（便于定位问题）
+$keep_aux = 1;
+
+# 编码设置：强制UTF-8（解决中文乱码核心问题）
+$ENV{LC_ALL} = 'en_US.UTF-8';
+$ENV{LANG} = 'en_US.UTF-8';
+
+########################### 快捷命令说明 ###########################
+# 使用方式（终端/命令行执行）：
+# 1. 常规编译：latexmk
+# 2. 编译并打开PDF：latexmk -pv
+# 3. 清理辅助文件：latexmk -c
+# 4. 完全清理（删除PDF）：latexmk -C
+# 5. 强制重新编译：latexmk -g
