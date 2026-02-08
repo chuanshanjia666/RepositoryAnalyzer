@@ -2,77 +2,38 @@
 \addcontentsline{toc}{chapter}{介  绍}
 \label{chap00:introduction}
 
-随着开源软件的快速发展，软件仓库中积累了大量的开发数据和协作信息。这些数据蕴含着丰富的项目质量、团队协作和代码演进信息，如何有效地分析和挖掘这些信息，成为提升软件质量和开发效率的关键。
+随着开源软件生态的蓬勃发展，软件仓库中沉淀了海量的开发数据与协作记录。这些数据不仅记录了代码的演进轨迹，更蕴含着关于项目质量、团队协作模式及潜在风险的宝贵信息。如何高效地挖掘并利用这些多源异构数据，已成为提升软件工程质量和开发效率的重要课题。
 
-本项目设计并实现了一个多维度的开源 Python 仓库分析器，专门针对 COMTool 项目进行分析。该分析器从三个核心维度对软件仓库进行全面分析：
+本项目旨在解决这一问题，设计并实现了一个通用的、多维度的开源 Python 仓库分析系统。该系统采用了模块化的架构设计，能够自动化地从版本控制、代码质量和协作平台三个核心层面对软件项目进行全方位的深度体检。
 
-\begin{itemize}
-    \item \textbf{Git 仓库分析}：通过分析提交历史、开发者贡献、代码演进等数据，揭示项目的开发轨迹和团队结构
-    \item \textbf{代码静态/动态分析}：利用多种工具进行代码复杂度评估、依赖安全审计、漏洞扫描和测试覆盖率分析
-    \item \textbf{GitHub 仓库分析}：基于 GitHub API 对 PR 协作流程、Issue 追踪和 Actions CI/CD 工作流进行深度分析
-\end{itemize}
+\section{系统架构与功能模块}
 
-\section{系统架构与实现}
-
-本分析器采用模块化架构设计，主要包含以下几个核心模块：
+本分析器采用高内聚低耦合的模块化设计，主要由中央控制单元和三大功能分析模块构成。各模块协同工作，实现了从数据采集到报告生成的全流程自动化。
 
 \subsection{主控制模块 (main.py)}
-主模块负责协调整个分析流程，包括环境初始化、仓库克隆、数据收集和各分析模块的调度。其核心功能包括：
+作为系统的核心调度器，主控制模块负责协调整个分析生命周期。它承担了运行环境初始化、目标仓库克隆、元数据收集以及各子分析模块的调度执行任务，确保分析流程的有序进行。
 
-\begin{verbatim}
-# 主要分析流程控制
-def main():
-    # 1. 环境初始化
-    setup_environment()
+\subsection{Git 演进分析模块}
+该模块专注于版本控制数据的深度挖掘。通过解析 Git 提交历史，系统不仅利用 gitgraph.js 生成直观的提交历史拓扑图，还能统计开发者的活跃度分布，量化个人与团队的贡献。此外，模块还包含了代码演进趋势分析与提交信息（Commit Message）的关键词语义分析，从而揭示项目的长期演化规律与开发重点。
 
-    # 2. 克隆/加载仓库
-    repo = clone_repo(GIT_URL, REPO_PATH)
+\subsection{代码质量与安全审计模块}
+为了评估代码本身的健壮性，本模块集成了多款业界主流的静态分析工具。在质量维度，引入 Radon 计算代码的环路复杂度，量化维护难度；利用 Pylint 进行严格的规范检查，确保代码风格的一致性。在安全维度，集成 Bandit 扫描代码逻辑中的常见安全漏洞，并通过 Safety 对项目依赖树进行审计，及时预警第三方库的已知风险，为项目构建双重安全防线。
 
-    # 3. 获取提交历史
-    commits = get_git_history(repo, MAX_COMMITS)
+\subsection{GitHub 协作生态分析模块}
+针对开源项目的社会化协作特征，该模块基于 PyGithub 库与 GitHub API 对接，重点分析项目的协作效率与流程规范。功能涵盖了 PR (Pull Request) 的处理效率分析、Issue 追踪系统的安全风险评估，以及对 GitHub Actions CI/CD 工作流配置的安全性检测，全方位评估项目的社区健康度与开发规范性。
 
-    # 4. 执行基础Git分析
-    analyze.run_all_analysis(repo, commits, output_dir=str(REPORT_DIR), prefix=PREFIX)
 
-    # 5. 执行深度代码分析
-    run_advanced_analysis()
-\end{verbatim}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{总功能图.drawio.png}
+    \caption{多维度 Git 仓库分析概览}
+    \label{fig:stats_overview}
+\end{figure}
 
-\subsection{Git 分析模块}
-该模块实现了多维度 Git 仓库分析，包括：
-\begin{itemize}
-    \item 提交历史可视化（基于 gitgraph.js）
-    \item 开发者活跃度统计
-    \item 代码演进趋势分析
-    \item 关键词语义分析
-\end{itemize}
+\section{技术特色}
 
-\subsection{代码质量分析模块}
-集成了多种静态分析工具：
-\begin{itemize}
-    \item \textbf{Radon}：代码复杂度分析
-    \item \textbf{Bandit}：安全漏洞扫描
-    \item \textbf{Pylint}：代码规范检查
-    \item \textbf{Safety}：依赖安全审计
-\end{itemize}
+本项目在设计与实现上具备以下显著特点：首先是\textbf{全流程自动化}，实现了从仓库拉取到多维分析报告生成的无人值守运行；其次是\textbf{可视化呈现}，通过丰富的图表和交互式界面直观展示复杂的数据分析结果；再次是\textbf{高度模块化}，清晰的架构使得系统易于通过插件形式扩展新的分析维度；最后是\textbf{跨平台兼容性}，确保了工具在不同操作系统环境下的稳定运行。
 
-\subsection{GitHub 生态分析模块}
-基于 PyGithub 库实现：
-\begin{itemize}
-    \item PR 协作效率分析
-    \item Issue 安全风险评估
-    \item Actions 工作流安全检测
-\end{itemize}
+\section{案例分析}
 
-\section{技术特点}
-
-\begin{itemize}
-    \item \textbf{自动化程度高}：从数据收集到报告生成的全流程自动化
-    \item \textbf{可视化丰富}：提供多种图表和交互式展示
-    \item \textbf{模块化设计}：易于扩展和定制
-    \item \textbf{跨平台兼容}：支持多种操作系统环境
-\end{itemize}
-
-通过本次分析，我们旨在为 COMTool 项目提供全面的质量评估，发现潜在问题，并为后续的代码优化和安全加固提供数据支持。
-
-报告的组织结构如下：第1章介绍 Git 仓库的多维度分析方法；第2章详细阐述代码静态和动态分析技术；第3章展示深度代码分析结果；第4章总结分析发现并提出改进建议。
+为了验证系统的有效性，我们选取了 \url{https://github.com/Neutree/COMTool.git} 仓库作为目标实例。通过对 COMTool 项目进行全面的质量评估与安全扫描，我们旨在发现项目中潜藏的代码缺陷与安全隐患，并为其后续的代码重构与安全加固提供详实的数据支持。
