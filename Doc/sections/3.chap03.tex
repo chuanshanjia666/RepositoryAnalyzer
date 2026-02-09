@@ -8,15 +8,7 @@
 Issue 是开源项目中追踪功能请求、Bug 报告和安全漏洞的核心载体，其处理状态直接反映了开源社区的活跃度和项目的维护质量。
 
 \subsection{分析方法}
-本项目开发了 \texttt{GitHubIssueAnalyzer} 模块，对仓库近一年的 Issue 数据进行了多维度扫描。分析过程主要包含以下两个层面：
-
-\begin{enumerate}
-    \item \textbf{安全漏洞智能识别}：
-    利用关键词特征提取技术，对 Issue 的标题 (Title)、正文 (Body) 和标签 (Labels) 进行全文检索。系统内置了丰富的安全领域词库（涵盖 'XSS', 'Injection', 'RCE', 'Vulnerability', 'CVE' 等中英文关键词），并结合标签权重（如 'Critical', 'High'）自动计算 Issue 的风险等级（High/Medium/Low）。这一机制能够快速定位潜在的安全隐患，弥补了单纯依赖代码扫描工具的不足。
-
-    \item \textbf{活跃度与趋势画像}：
-    通过时间序列分析，统计 Issue 的创建时间、关闭时间以及存活周期。这些指标能够客观反映开发者对社区反馈的响应速度，以及项目在不同时间段的维护热度。
-\end{enumerate}
+本项目开发了 \texttt{GitHubIssueAnalyzer} 模块，对仓库近一年的 Issue 数据进行了多维度扫描。分析过程主要包含两个层面。首先是\textbf{安全漏洞智能识别}，利用关键词特征提取技术，对 Issue 的标题 (Title)、正文 (Body) 和标签 (Labels) 进行全文检索。系统内置了丰富的安全领域词库（涵盖 'XSS', 'Injection', 'RCE', 'Vulnerability', 'CVE' 等中英文关键词），并结合标签权重（如 'Critical', 'High'）自动计算 Issue 的风险等级（High/Medium/Low）。这一机制能够快速定位潜在的安全隐患，弥补了单纯依赖代码扫描工具的不足。其次是\textbf{活跃度与趋势画像}，通过时间序列分析，统计 Issue 的创建时间、关闭时间以及存活周期。这些指标能够客观反映开发者对社区反馈的响应速度，以及项目在不同时间段的维护热度。
 
 核心代码实现如下：
 
@@ -70,19 +62,10 @@ def analyze_security_issues(self, issues):
 Pull Request (PR) 机制是现代代码协作的基石。通过分析 PR 的生命周期数据，我们可以对项目的代码审查效率、贡献者活跃度以及合入流程的健康度进行画像。
 
 \subsection{数据获取与处理机制}
-针对 GitHub API 的调用频率限制（Rate Limit），数据获取模块采用了智能化的缓存与限流策略。
-\begin{itemize}
-    \item \textbf{增量更新与本地缓存}：工具基于 JSON 和 CSV 双格式在本地维护数据快照。每次运行时，优先检查缓存数据的时效性（默认 24 小时过期），仅对过期或新增的数据发起网络请求，极大提升了分析效率。
-    \item \textbf{自适应退避算法}：当触发 API 限流阈值时，程序会自动计算剩余配额的重置时间，并动态调整休眠等待时长，确保在大规模数据抓取任务中的稳定性。
-\end{itemize}
+针对 GitHub API 的调用频率限制（Rate Limit），数据获取模块采用了智能化的缓存与限流策略。一方面采用\textbf{增量更新与本地缓存}，工具基于 JSON 和 CSV 双格式在本地维护数据快照。每次运行时，优先检查缓存数据的时效性（默认 24 小时过期），仅对过期或新增的数据发起网络请求，极大提升了分析效率。另一方面应用\textbf{自适应退避算法}，当触发 API 限流阈值时，程序会自动计算剩余配额的重置时间，并动态调整休眠等待时长，确保在大规模数据抓取任务中的稳定性。
 
 \subsection{多维度协作指标}
-分析工具对抓取到的 PR 数据进行了深度加工，计算了以下关键指标：
-\begin{enumerate}
-    \item \textbf{PR 处理周期}：从创建到合并/关闭的平均时长，直接反映了核心团队的代码审查响应速度。
-    \item \textbf{代码变更规模}：统计每个 PR 的新增行数 (Additions) 和删除行数 (Deletions)，用于评估单次提交的粒度是否合理。
-    \item \textbf{僵尸 PR (Zombie PRs)}：识别那些长期处于 Open 状态且缺乏更新的 PR，这些通常意味着搁置的功能或未解决的冲突。
-\end{enumerate}
+分析工具对抓取到的 PR 数据进行了深度加工，计算了多项关键指标。\textbf{PR 处理周期}即从创建到合并/关闭的平均时长，直接反映了核心团队的代码审查响应速度；\textbf{代码变更规模}统计每个 PR 的新增行数 (Additions) 和删除行数 (Deletions)，用于评估单次提交的粒度是否合理；而\textbf{僵尸 PR (Zombie PRs)}则用于识别那些长期处于 Open 状态且缺乏更新的 PR，这些通常意味着搁置的功能或未解决的冲突。
 
 \subsection{分析结果}
 本次共分析了 \textbf{23 个 Pull Request}。如图 \ref{fig:pr_analysis} 所示，详细报告涵盖了 PR 状态分布、贡献者活跃度排名以及代码变更体积分布。数据表明，项目的 PR 合并流程相对顺畅，但在处理周期上仍有优化空间，建议进一步规范代码审查流程，缩短从提交到合入的反馈闭环。
@@ -99,23 +82,13 @@ Pull Request (PR) 机制是现代代码协作的基石。通过分析 PR 的生�
 持续集成与持续部署 (CI/CD) 是保障软件交付质量的关键基础设施。GitHub Actions 作为原生的 CI/CD 解决方案，其配置的安全性和执行效率直接关系到项目的构建安全。
 
 \subsection{工作流安全性审计}
-\texttt{GitHubActionsAnalyzer} 模块采用静态配置分析技术，通过正则表达式集对 \texttt{.github/workflows} 目录下的 YAML 配置文件进行安全扫描。主要检测项包括：
-\begin{itemize}
-    \item \textbf{供应链攻击风险}：检测是否直接使用分支名称或 Tag（如 \texttt{@master}, \texttt{@v1}）引用第三方 Action，而非使用不可篡改的 Commit SHA 哈希值。
-    \item \textbf{脚本执行安全}：扫描 \texttt{run} 字段中是否存在危险的命令模式，如 \texttt{curl | bash}（远程脚本直接执行）等高危操作。
-    \item \textbf{权限配置审计}：检查 \texttt{permissions} 字段是否遵循最小权限原则，防止工作流脚本获取过高的 Github Token 权限。
-\end{itemize}
+\texttt{GitHubActionsAnalyzer} 模块采用静态配置分析技术，通过正则表达式集对 \texttt{.github/workflows} 目录下的 YAML 配置文件进行安全扫描。主要检测项包括：\textbf{供应链攻击风险}用于检测是否直接使用分支名称或 Tag（如 \texttt{@master}, \texttt{@v1}）引用第三方 Action，而非使用不可篡改的 Commit SHA 哈希值；\textbf{脚本执行安全}扫描 \texttt{run} 字段中是否存在危险的命令模式，如 \texttt{curl | bash}（远程脚本直接执行）等高危操作；\textbf{权限配置审计}检查 \texttt{permissions} 字段是否遵循最小权限原则，防止工作流脚本获取过高的 Github Token 权限。
 
 \subsection{执行效率与稳定性}
 除了静态安全扫描，工具还通过 API 获取了工作流的历史运行记录 (Workflow Runs)，统计了成功率、失败率以及平均构建时长。
 
 \subsection{分析结果}
-分析覆盖了仓库中的 \textbf{5 个工作流文件}，并追溯了最近一年内的 \textbf{12 次运行记录}。
-
-\begin{itemize}
-    \item \textbf{安全审计结论}：本次扫描 \textbf{未发现 (0 个)} 高危安全配置问题。这表明 COMTool 项目在 CI/CD 配置上遵循了较为严格的安全规范，不存在明显的供应链攻击敞口或脚本注入风险。
-    \item \textbf{运行效能}：工作流运行数据显示构建成功率保持在较高水平，说明自动化测试和构建环境较为稳定。
-\end{itemize}
+分析覆盖了仓库中的 \textbf{5 个工作流文件}，并追溯了最近一年内的 \textbf{12 次运行记录}。在\textbf{安全审计结论}方面，本次扫描 \textbf{未发现 (0 个)} 高危安全配置问题。这表明 COMTool 项目在 CI/CD 配置上遵循了较为严格的安全规范，不存在明显的供应链攻击敞口或脚本注入风险。在\textbf{运行效能}方面，工作流运行数据显示构建成功率保持在较高水平，说明自动化测试和构建环境较为稳定。
 
 图 \ref{fig:actions_analysis} 展示了工作流的综合分析结果，包括安全扫描详情及历史运行统计。
 

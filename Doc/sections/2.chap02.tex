@@ -8,18 +8,11 @@
 代码复杂度是评估软件技术债务和可维护性的关键指标。过高的复杂度往往意味着模块耦合度高、测试难度大且极易产生 Bug。本项目设计了 \texttt{AdvancedRadonAnalyzer} 模块，利用抽象语法树 (AST) 技术实现了对项目代码的深度量化。
 
 \subsection{分析指标与方法}
-分析器通过 \texttt{code\_analyzer.py} 遍历仓库中的所有 Python 源文件，计算以下两项核心指标：
-\begin{enumerate}
-    \item \textbf{圈复杂度 (Cyclomatic Complexity, CC)}：
-    圈复杂度是衡量代码逻辑分支数量的指标。通过计算控制流图中的线性独立路径数，识别出逻辑过于复杂的函数或方法。计算公式为 $V(G) = E - N + 2P$，其中 $E$ 为边数，$N$ 为节点数，$P$ 为连通分量数。
-    
-    \item \textbf{可维护性指数 (Maintainability Index, MI)}：
-    这是一个综合性评分（0-100），基于 Halstead 体积、圈复杂度和代码行数 (LOC) 加权计算得出。MI 值越高表示代码越容易维护。
-    \begin{equation}
-    MI = 171 - 5.2 \ln V - 0.23 G - 16.2 \ln L
-    \end{equation}
-    其中 $V$ 是 Halstead 体积，$G$ 是圈复杂度，$L$ 是代码行数。
-\end{enumerate}
+分析器通过 \texttt{code\_analyzer.py} 遍历仓库中的所有 Python 源文件，计算两项核心指标。首先是\textbf{圈复杂度 (Cyclomatic Complexity, CC)}，它是衡量代码逻辑分支数量的指标，通过计算控制流图中的线性独立路径数，识别出逻辑过于复杂的函数或方法。计算公式为 $V(G) = E - N + 2P$，其中 $E$ 为边数，$N$ 为节点数，$P$ 为连通分量数。其次是\textbf{可维护性指数 (Maintainability Index, MI)}，这是一个基于 Halstead 体积、圈复杂度和代码行数 (LOC) 加权计算得出的综合性评分（0-100）。MI 值越高表示代码越容易维护，其计算公式如下：
+\begin{equation}
+MI = 171 - 5.2 \ln V - 0.23 G - 16.2 \ln L
+\end{equation}
+其中 $V$ 是 Halstead 体积，$G$ 是圈复杂度，$L$ 是代码行数。
 
 \subsection{核心算法实现}
 \texttt{code\_analyzer.py} 实现了批量化的分析逻辑和容错处理，关键代码如下：
@@ -67,11 +60,7 @@ class AdvancedRadonAnalyzer:
 随着开源组件的广泛复用，软件供应链攻击已成为不容忽视的安全威胁。\texttt{dependency\_analyzer.py} 模块旨在通过深度的依赖树分析，构建清晰的项目依赖图谱并识别潜在漏洞。
 
 \subsection{依赖解析与漏洞匹配}
-该模块整合了 \texttt{pipdeptree} 和 \texttt{safety} 两大工具，实现了“解析-检测-可视化”的闭环流程：
-\begin{itemize}
-    \item \textbf{全链路依赖解析}：不局限于 \texttt{requirements.txt} 中声明的直接依赖，而是通过 Python 环境反向解析，构建包含所有传递依赖（Transitive Dependencies）的完整依赖树，挖掘隐蔽的“影子依赖”。
-    \item \textbf{CVE 漏洞库比对}：将所有依赖包的版本指纹与 Safety DB 漏洞数据库进行实时比对，精准定位包含已知 CVE 漏洞的组件。
-\end{itemize}
+该模块整合了 \texttt{pipdeptree} 和 \texttt{safety} 两大工具，实现了“解析-检测-可视化”的闭环流程。首先进行\textbf{全链路依赖解析}，不局限于 \texttt{requirements.txt} 中声明的直接依赖，而是通过 Python 环境反向解析，构建包含所有传递依赖（Transitive Dependencies）的完整依赖树，挖掘隐蔽的“影子依赖”。随后执行\textbf{CVE 漏洞库比对}，将所有依赖包的版本指纹与 Safety DB 漏洞数据库进行实时比对，精准定位包含已知 CVE 漏洞的组件。
 
 \subsection{关键代码实现}
 为了确保在不同操作系统（Windows/Linux）下的兼容性，代码对子进程调用进行了封装：
@@ -120,13 +109,7 @@ class DependencyAnalyzer:
 静态应用程序安全测试 (SAST) 是在代码编写阶段发现安全缺陷的有效手段。\texttt{vulnerability\_scanner.py} 模块基于 \texttt{Bandit} 引擎，对 Python 源码进行全量的 AST 模式匹配。
 
 \subsection{扫描机制与规则集}
-扫描器不执行任何代码，而是将源代码解析为抽象语法树，并在节点上运行一系列预定义的检测插件（Plugins）。主要覆盖以下高危风险点：
-\begin{itemize}
-    \item \textbf{敏感信息泄露}：检测代码中硬编码的密码、API Key、Token 等。
-    \item \textbf{命令注入风险}：扫描 \texttt{subprocess}, \texttt{os.system}, \texttt{exec}, \texttt{eval} 等危险函数的使用场景。
-    \item \textbf{弱加密算法}：检测是否使用了不安全的哈希算法（如 MD5, SHA1）。
-    \item \textbf{Web 安全}：检查 Flask/Django 等框架的配置是否开启了 Debug 模式或绑定了 0.0.0.0。
-\end{itemize}
+扫描器不执行任何代码，而是将源代码解析为抽象语法树，并在节点上运行一系列预定义的检测插件（Plugins）。检测覆盖了多个高危风险点：\textbf{敏感信息泄露}检测代码中硬编码的密码、API Key、Token 等；\textbf{命令注入风险}扫描 \texttt{subprocess}, \texttt{os.system}, \texttt{exec}, \texttt{eval} 等危险函数的使用场景；\textbf{弱加密算法}检测是否使用了不安全的哈希算法（如 MD5, SHA1）；\textbf{Web 安全}则检查 Flask/Django 等框架的配置是否开启了 Debug 模式或绑定了 0.0.0.0。
 
 \subsection{SAST 引擎集成}
 为了适配 Bandit 的版本更新，扫描器实现了与 \texttt{BanditManager} 的深度集成：
@@ -163,12 +146,7 @@ class AdvancedVulnerabilityScanner:
 \end{verbatim}
 
 \subsection{风险评估报告}
-本次扫描共检出 \textbf{45 个潜在安全问题}，风险分布如下：
-\begin{itemize}
-    \item \textbf{高风险 (High)：5 个}。主要涉及潜在的命令注入风险或硬编码凭证，建议立即修复。
-    \item \textbf{中风险 (Medium)：6 个}。主要涉及弱加密算法的使用或不安全的临时文件创建。
-    \item \textbf{低风险 (Low)：34 个}。多为异常捕获范围过大或其他代码风格相关的安全建议。
-\end{itemize}
+本次扫描共检出 \textbf{45 个潜在安全问题}。其中，\textbf{高风险 (High) 问题 5 个}，主要涉及潜在的命令注入风险或硬编码凭证，建议立即修复；\textbf{中风险 (Medium) 问题 6 个}，主要涉及弱加密算法的使用或不安全的临时文件创建；\textbf{低风险 (Low) 问题 34 个}，多为异常捕获范围过大或其他代码风格相关的安全建议。
 
 图 \ref{fig:vulnerability_viz} 直观展示了各类风险的分布，为了解项目的安全基线提供了数据支撑。
 

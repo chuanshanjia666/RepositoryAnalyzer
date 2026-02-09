@@ -1,3 +1,201 @@
-\chapter*{\hfill 附录~A　附录内容名称 \hfill}
-\addcontentsline{toc}{chapter}{附录~A　附录内容名称}
+\chapter*{\hfill 附录~A　原始分析数据摘录 \hfill}
+\addcontentsline{toc}{chapter}{附录~A　原始分析数据摘录}
 
+为了佐证正文中的分析结论，本附录摘录了部分自动化工具生成的原始分析报告。这些数据直接来源于工具链的输出，未进行人工修饰。
+
+\section*{A.1 Bandit 安全扫描报告（节选）}
+
+以下是 \texttt{bandit} 工具对源代码进行 AST 静态扫描后输出的部分高风险与中风险问题记录。报告详细列出了漏洞类型、严重程度及对应的代码位置。
+
+\begin{verbatim}
+Run started:2026-02-09 03:44:55.548818+00:00
+
+Test results:
+>> Issue: [B606:start_process_with_no_shell] Starting a process without a shell.
+   Severity: Low   Confidence: Medium
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   Location: repo/COMTool/Main.py:16:4
+   15          log.i("Restarting..., comand: {} {} {}".format(python, python, *sys.argv))
+   16          os.execl(python, python, * sys.argv)
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   Location: repo/COMTool/autoUpdate.py:25:19
+   24              try:
+   25                  page = requests.get(self.releaseApiUrl)
+\end{verbatim}
+
+\section*{A.2 Radon 圈复杂度分析（节选）}
+
+以下是 \texttt{radon} 工具生成的圈复杂度 (Cyclomatic Complexity) 原始数据。每行显示了文件路径、类型（M=Method, C=Class, F=Function）、代码行号、名称以及复杂度评分（A为最优，F为最差）。
+
+\begin{verbatim}
+repo/COMTool/Combobox.py
+    M 23:4 ComboBox._showPopup - A (3)
+    C 5:0 ComboBox - A (2)
+    M 9:4 ComboBox.__init__ - A (1)
+    M 15:4 ComboBox.mouseReleaseEvent - A (1)
+
+repo/COMTool/Main.py
+    F 10:0 restart_program - A (1)
+
+repo/COMTool/autoUpdate.py
+    M 21:4 AutoUpdate.checkUpdate_github - B (7)
+    C 10:0 AutoUpdate - A (4)
+    M 50:4 AutoUpdate.checkUpdate_neucrack - A (4)
+    M 14:4 AutoUpdate.detectNewVersion - A (2)
+    M 72:4 AutoUpdate.decodeTag - A (2)
+\end{verbatim}
+
+\section*{A.3 Pylint 代码风格检查（节选）}
+
+以下是 \texttt{pylint} 对代码规范性检查的输出样本。主要包含了命名规范（Snake Case）、文档字符串缺失（Missing docstring）以及导入错误等问题。
+
+\begin{verbatim}
+************* Module COMTool
+repo/COMTool/__init__.py:1:0: C0103: Module name "COMTool" doesn't conform to 
+snake_case naming style (invalid-name)
+
+************* Module COMTool.Combobox
+repo/COMTool/Combobox.py:1:0: C0103: Module name "Combobox" doesn't conform to 
+snake_case naming style (invalid-name)
+repo/COMTool/Combobox.py:5:0: C0115: Missing class docstring (missing-class-docstring)
+repo/COMTool/Combobox.py:11:8: C0103: Variable name "listView" doesn't conform to 
+snake_case naming style (invalid-name)
+repo/COMTool/Combobox.py:15:4: C0103: Method name "mouseReleaseEvent" doesn't conform 
+to snake_case naming style (invalid-name)
+repo/COMTool/Combobox.py:18:4: C0103: Method name "showPopup" doesn't conform to 
+snake_case naming style (invalid-name)
+\end{verbatim}
+
+\section*{A.4 PR分析报告}
+
+本节展示了针对 Neutree/COMTool 仓库的 PR 深度分析报告。
+
+\textbf{仓库名称}：Neutree/COMTool \quad
+\textbf{分析时间}：2026-02-09 11:46:32 \quad
+\textbf{僵尸PR阈值}：7天 \quad
+\textbf{异常值过滤阈值}：30天
+
+\subsection*{核心指标汇总}
+\begin{longtable}{l|l}
+\hline
+\textbf{指标} & \textbf{数值} \\
+\hline
+\endfirsthead
+\hline
+\textbf{指标} & \textbf{数值} \\
+\hline
+\endhead
+\hline
+\endfoot
+总PR数 & 23 \\
+合入PR数 & 16 \\
+拒绝PR数 & 5 \\
+未处理PR数 & 2 \\
+PR合入率 & 69.57\% \\
+PR拒绝率 & 21.74\% \\
+僵尸PR数 & 2 \\
+僵尸PR占比 & 8.7\% \\
+平均审核时长（小时） & 7.86 \\
+中位数审核时长（小时） & 1.58 \\
+过滤异常值后审核时长 & 7.86 \\
+平均评论数 & 1.65 \\
+平均提交次数 & 1.57 \\
+平均新增代码 & 138.78 行 \\
+平均删除代码 & 73.78 行 \\
+平均修改文件数 & 2.65 个 \\
+平均生命周期（天） & 0.9 \\
+\hline
+\end{longtable}
+
+\subsection*{关键结论}
+
+\begin{enumerate}
+    \item \textbf{PR处理效率}：仓库PR合入率为69.57\%，拒绝率为21.74\%，反映代码评审的严格程度。正常的拒绝率可能表明评审标准较为严格。
+    \item \textbf{僵尸PR情况}：僵尸PR占比8.7\%，正常的比例表明需要关注PR处理效率。
+    \item \textbf{审核效率}：平均审核时长7.86小时，中位数为1.58小时。过滤异常值后为7.86小时，正常的时长可能影响开发效率。
+    \item \textbf{代码质量}：平均每次PR新增代码138.78行，删除代码73.78行，修改文件2.65个。较小规模的修改可能增加评审难度。
+    \item \textbf{PR生命周期}：关闭PR的平均生命周期为0.9天，正常的生命周期可能表明评审流程需要优化。
+    \item \textbf{协作模式}：PR的平均评论数为1.65条，较少的评论表明团队协作程度较高。
+    \item \textbf{提交习惯}：平均每次PR提交次数为1.57次，正常的提交次数可能表明开发过程较为迭代。
+\end{enumerate}
+
+\subsection*{详细分析}
+
+\subsubsection*{PR作者分布}
+\begin{longtable}{l|c|r}
+\hline
+\textbf{作者} & \textbf{PR数量} & \textbf{占比} \\
+\hline
+YI-- & 2 & 8.7\% \\
+junchao98 & 2 & 8.7\% \\
+e71828 & 2 & 8.7\% \\
+lhdjply & 2 & 8.7\% \\
+taotieren & 2 & 8.7\% \\
+dependabot[bot] & 2 & 8.7\% \\
+taorye & 2 & 8.7\% \\
+wirano & 1 & 4.3\% \\
+sunzigang & 1 & 4.3\% \\
+kaidegit & 1 & 4.3\% \\
+\hline
+\end{longtable}
+
+\subsubsection*{PR标签分布}
+\begin{longtable}{l|c|r}
+\hline
+\textbf{标签} & \textbf{PR数量} & \textbf{占比} \\
+\hline
+无标签 & 21 & 91.3\% \\
+dependencies & 2 & 8.7\% \\
+\hline
+\end{longtable}
+
+\subsubsection*{PR分支分析}
+
+\textbf{目标分支分布}
+\begin{longtable}{l|c}
+\hline
+\textbf{分支} & \textbf{PR数量} \\
+\hline
+master & 23 \\
+\hline
+\end{longtable}
+
+\textbf{来源分支分布}
+\begin{longtable}{l|c}
+\hline
+\textbf{分支} & \textbf{PR数量} \\
+\hline
+master & 13 \\
+aur & 2 \\
+feat/record & 1 \\
+fix/protocols & 1 \\
+makensis & 1 \\
+develop/savetimesamp & 1 \\
+GImDX-patch-1 & 1 \\
+fix-badge & 1 \\
+dependabot/pip/urllib3-1.26.5 & 1 \\
+dependabot/pip/urllib3-1.25.8 & 1 \\
+\hline
+\end{longtable}
+
+\subsubsection*{PR生命周期分布}
+\begin{longtable}{l|c}
+\hline
+\textbf{生命周期} & \textbf{PR数量} \\
+\hline
+$<$1天 & 19 \\
+1-3天 & 1 \\
+3-7天 & 0 \\
+7-14天 & 0 \\
+14-30天 & 1 \\
+30-60天 & 0 \\
+$>$60天 & 0 \\
+\hline
+\end{longtable}
+
+\vspace{1em}
+\textit{报告生成时间：2026-02-09 11:46:32}
