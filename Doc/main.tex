@@ -24,7 +24,7 @@
 % style=gb7714-2015：适配国标GB/T 7714-2015参考文献格式
 % backend=biber：指定使用biber处理参考文献（优于bibtex）
 % sorting=nyt：按姓名/年份/标题排序，符合学术规范
-\usepackage[style=gb7714-2015, backend=biber, sorting=nyt]{biblatex}
+% \usepackage[style=gb7714-2015, backend=biber, sorting=nyt]{biblatex}
 \addbibresource{sections/reference.bib}  % 参考文献数据库路径
 
 % 4. 全局字体与行距配置（统一全文格式）
@@ -96,14 +96,14 @@
 
 % ########################### 参考文献（标准化配置） ###########################
 % 恢复五号字（大工参考文献要求），添加目录项，符合学术规范
-\wuhao
-\phantomsection           % 锚点定位，确保目录跳转正确
-\addcontentsline{toc}{chapter}{参考文献}  % 将参考文献加入目录
-\printbibliography[
-    title={参考文献},     % 参考文献标题
-    heading=chapter       % 按章节级别显示
-]
-\cleardoublepage
+% \wuhao
+% % \phantomsection           % 锚点定位，确保目录跳转正确
+% \addcontentsline{toc}{chapter}{参考文献}  % 将参考文献加入目录
+% \printbibliography[
+%     title={参考文献},     % 参考文献标题
+%     % heading=chapter       % 按章节级别显示
+% ]
+% \cleardoublepage
 
 % ########################### 附录部分 ###########################
 \defaultfont
