@@ -396,3 +396,81 @@ def plot_file_hotspots(hotspot_data, output_path):
     \caption{最常被修改的代码目录 (热点分析)}
     \label{fig:hotspots}
 \end{figure}
+
+\subsubsection{项目迭代与协作模式分析}
+
+除了上述的基础分析外，工具还从周维度和合并行为两个层面深入剖析了项目的迭代节奏与团队协作模式。
+
+\textbf{每周开发节奏}：
+通过分析提交日期在周一至周日的分布情况（图 \ref{fig:dow_activity}），可以直观地展示团队的工作习惯。例如，开源项目可能在周末有较多提交，而企业项目则集中在工作日。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def analyze_day_of_week(commits):
+    """分析每周开发节奏"""
+    days = [datetime.strptime(c['date'], '%Y-%m-%d %H:%M').weekday() for c in commits]
+    day_counts = Counter(days)
+    day_labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    # 绘制直方图...
+\end{verbatim}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_dow.png}
+    \caption{每周提交演变分布}
+    \label{fig:dow_activity}
+\end{figure}
+
+\textbf{每周迭代速度}：
+为了观察项目的长期活跃度变化，工具统计了项目历史上每一周的提交总数（图 \ref{fig:weekly_velocity}）。这比月度趋势更细粒度地反映了冲刺开发期（Sprint）和休整期。
+
+\textbf{Merge与协作模式}：
+在多人协作项目中，分支合并（Merge）和 Pull Request 是主要的工作流。工具统计了合并提交与普通提交的比例（图 \ref{fig:merge_ratio}），以及每月的合并活动频率（图 \ref{fig:merge_activity}）。高比例的 Merge 提交通常意味着规范的分支管理策略（如 Git Flow）。
+
+\begin{figure}[htbp]
+    \centering
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{comtool_stats_merge_ratio.png}
+        \caption{合并提交与普通提交占比}
+        \label{fig:merge_ratio}
+    \end{minipage}
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{comtool_stats_merges.png}
+        \caption{每月合并 (PR) 活动统计}
+        \label{fig:merge_activity}
+    \end{minipage}
+\end{figure}
+
+\textbf{版本发布时间轴}：
+通过分析 Git Tag，工具绘制了版本发布的时间轴（图 \ref{fig:release_timeline}），可视化了项目的里程碑节点。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{comtool_stats_releases.png}
+    \caption{项目 Release (Tag) 发布时间轴}
+    \label{fig:release_timeline}
+\end{figure}
+
+\subsubsection{技术栈构成与提交粒度}
+
+\textbf{文件类型分布}：
+通过遍历所有历史提交中修改的文件后缀名，统计了项目最常修改的文件类型（图 \ref{fig:file_types}）。这一数据反映了项目的核心技术栈（如 .py, .js, .cpp）以及文档 (.md) 或配置文件的维护频率。
+
+\textbf{单次提交粒度}：
+统计每次提交所修改的文件数量分布（图 \ref{fig:modify_count}）。由于“原子提交”（Atomic Commit）通常被提倡，该图表可以帮助评估团队的提交规范度——大多数提交应只修改少量文件。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_file_types.png}
+    \caption{最常修改的文件类型分布}
+    \label{fig:file_types}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_modify_file_count.png}
+    \caption{单次提交改动文件数量分布}
+    \label{fig:modify_count}
+\end{figure}
