@@ -1,158 +1,124 @@
-\chapter{代码库静态质量审计}
+\chapter{代码静态/动态分析}
 \label{chap02}
 
-保证代码库的长期健康演进，不仅需要规范的开发流程，更需要自动化的质量审计工具。本章详细阐述了针对 Python 项目开发的三大核心静态分析模块：基于 AST 的代码复杂度分析、基于供应链视角的项目依赖审计，以及基于模式匹配的静态漏洞扫描。这三个模块共同构成了项目的自动化质量防护网。
+本章详细介绍针对代码库开展的深度质量分析，涵盖代码复杂度评估、项目依赖安全审计、静态漏洞扫描及动态测试覆盖率分析四个维度，全方位评估软件鲁棒性与可维护性。
 
-\section{代码复杂度量化分析}
+\section{代码复杂度分析}
 
-代码复杂度是评估软件技术债务和可维护性的关键指标。过高的复杂度往往意味着模块耦合度高、测试难度大且极易产生 Bug。本项目设计了 \texttt{AdvancedRadonAnalyzer} 模块，利用抽象语法树 (AST) 技术实现了对项目代码的深度量化。
+代码复杂度是衡量软件可维护性的核心指标，本项目基于\texttt{radon}库，通过\texttt{AdvancedRadonAnalyzer}模块实现自动化复杂度计算与可视化分析。
 
-\subsection{分析指标与方法}
-分析器通过 \texttt{code\_analyzer.py} 遍历仓库中的所有 Python 源文件，计算两项核心指标。首先是\textbf{圈复杂度 (Cyclomatic Complexity, CC)}，它是衡量代码逻辑分支数量的指标，通过计算控制流图中的线性独立路径数，识别出逻辑过于复杂的函数或方法。计算公式为 $V(G) = E - N + 2P$，其中 $E$ 为边数，$N$ 为节点数，$P$ 为连通分量数。其次是\textbf{可维护性指数 (Maintainability Index, MI)}，这是一个基于 Halstead 体积、圈复杂度和代码行数 (LOC) 加权计算得出的综合性评分（0-100）。MI 值越高表示代码越容易维护，其计算公式如下：
-\begin{equation}
-MI = 171 - 5.2 \ln V - 0.23 G - 16.2 \ln L
-\end{equation}
-其中 $V$ 是 Halstead 体积，$G$ 是圈复杂度，$L$ 是代码行数。
+\subsection{分析方法与实现}
+模块遍历仓库中所有Python文件，基于抽象语法树（AST）计算以下核心指标：
+\begin{itemize}
+    \item \textbf{圈复杂度 (Cyclomatic Complexity, CC)}：统计代码线性独立路径数量衡量逻辑复杂性，通过\texttt{radon.complexity.cc\_visit}解析代码块，统计if/while/for等控制流结构
+    \item \textbf{可维护性指数 (Maintainability Index, MI)}：利用\texttt{radon.metrics.mi\_visit}计算0-100分的综合评分，结合圈复杂度、代码行数、Halstead体积和注释比例
+\end{itemize}
 
-\subsection{核心算法实现}
-\texttt{code\_analyzer.py} 实现了批量化的分析逻辑和容错处理，关键代码如下：
+\subsection{核心实现代码}
+\texttt{AdvancedRadonAnalyzer}类核心实现如下：
 
 \begin{verbatim}
 class AdvancedRadonAnalyzer:
+    def __init__(self, repo_path, output_dir):
+        self.repo_path = Path(repo_path)
+        self.output_dir = Path(output_dir)
+
+    def analyze_file(self, file_path):
+        """分析单个文件复杂度"""
+        with open(file_path, 'r', encoding='utf-8') as f:
+            code = f.read()
+
+        # 计算圈复杂度与可维护性指数
+        cc_results = cc_visit(code)
+        mi_result = mi_visit(code, True)
+
+        return {
+            'file': str(file_path),
+            'cc_complexity': len(cc_results),
+            'mi_score': mi_result,
+            'loc': len(code.split('\n'))
+        }
+
     def batch_analyze(self):
-        """批量分析复杂度（含容错机制）"""
-        results = {"cyclomatic_complexity": [], "maintainability_index": []}
+        """批量分析所有Python文件"""
+        python_files = list(self.repo_path.rglob('*.py'))
+        results = []
 
-        for file_path in self.get_python_files():
+        for file_path in python_files:
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                
-                # 1. 计算圈复杂度 (AST Visitors)
-                cc_results = cc.cc_visit(content)
-                avg_cc = sum(c.complexity for c in cc_results) / len(cc_results) if cc_results else 0.0
-                
-                # 2. 计算可维护性指数
-                mi = rm.mi_visit(content, multi=True)
-                # ... (结果归一化处理) ...
-
-                results["cyclomatic_complexity"].append(avg_cc)
-                results["maintainability_index"].append(avg_mi)
-
+                result = self.analyze_file(file_path)
+                results.append(result)
             except Exception as e:
-                print(f"❌ 分析 {file_path} 失败：{str(e)}")
+                print(f"分析文件 {file_path} 出错: {e}")
 
         return results
 \end{verbatim}
 
-\subsection{分析结果可视化}
-分析模块对项目中的 47 个文件进行了扫描，其中 38 个为有效代码文件。图 \ref{fig:radon_complexity} 展示了分析结果的分布情况。可以看出，项目中绝大多数模块的圈复杂度保持在 10 以下（低风险区），可维护性指数均值较高，表明代码结构清晰，具备良好的可维护性。
+\subsection{可视化分析}
+分析结果聚合后生成图\ref{fig:radon_complexity}，上部展示有效文件平均圈复杂度，下部展示可维护性指数分布，可快速定位复杂度过高（CC高）或难以维护（MI低）的"坏味道"模块。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{radon_complexity_visualization.png}
-    \caption{代码圈复杂度 (CC) 与可维护性指数 (MI) 分布图}
+    \caption{代码圈复杂度与可维护性指数分布}
     \label{fig:radon_complexity}
 \end{figure}
 
-\section{软件供应链安全审计}
+\section{项目依赖与安全审计}
 
-随着开源组件的广泛复用，软件供应链攻击已成为不容忽视的安全威胁。\texttt{dependency\_analyzer.py} 模块旨在通过深度的依赖树分析，构建清晰的项目依赖图谱并识别潜在漏洞。
+针对软件开发中的"供应链安全"问题，\texttt{dependency\_analyzer.py}模块基于\texttt{pipdeptree}和\texttt{safety}工具实现深度依赖分析。
 
-\subsection{依赖解析与漏洞匹配}
-该模块整合了 \texttt{pipdeptree} 和 \texttt{safety} 两大工具，实现了“解析-检测-可视化”的闭环流程。首先进行\textbf{全链路依赖解析}，不局限于 \texttt{requirements.txt} 中声明的直接依赖，而是通过 Python 环境反向解析，构建包含所有传递依赖（Transitive Dependencies）的完整依赖树，挖掘隐蔽的“影子依赖”。随后执行\textbf{CVE 漏洞库比对}，将所有依赖包的版本指纹与 Safety DB 漏洞数据库进行实时比对，精准定位包含已知 CVE 漏洞的组件。
+\subsection{分析维度}
+\begin{itemize}
+    \item \textbf{依赖树解析}：调用\texttt{pipdeptree --json}命令解析环境依赖关系，构建完整依赖树，识别直接依赖及隐蔽的传递依赖
+    \item \textbf{漏洞数据库比对}：集成\texttt{safety}工具，将依赖版本与CVE漏洞数据库比对，自动标记存在安全风险的包版本
+\end{itemize}
 
-\subsection{关键代码实现}
-为了确保在不同操作系统（Windows/Linux）下的兼容性，代码对子进程调用进行了封装：
-
-\begin{verbatim}
-class DependencyAnalyzer:
-    def analyze_python_deps(self) -> Dict[str, Any]:
-        """全链路Python依赖分析"""
-        # 1. 解析依赖树结构
-        if self._check_tool("pipdeptree"):
-            result = self._run_subprocess(
-                ["pipdeptree", "--json"], "解析依赖树"
-            )
-            deps_tree = json.loads(result) if result else []
-        
-        # 2. 漏洞扫描
-        vulnerable_deps = self._check_vulnerable_deps()
-        
-        return {
-            "transitive_deps": self._process_tree(deps_tree),
-            "vulnerable_deps": vulnerable_deps,
-            "total_vulnerable": len(vulnerable_deps)
-        }
-
-    def _check_vulnerable_deps(self) -> List[Any]:
-        """执行Safety扫描"""
-        result = self._run_subprocess(
-            ["python", "-m", "safety", "check", "--json"],
-            "Python漏洞依赖检测"
-        )
-        return result.get("vulnerabilities", []) if result else []
-\end{verbatim}
-
-\subsection{供应链审计结论}
-如图 \ref{fig:dependency_analysis} 所示，本次审计 \textbf{未发现任何已知的高危漏洞依赖}。这得益于项目团队严格的依赖版本管理策略。依赖树分析显示，项目虽然引入了较多的第三方库，但都在安全可控的版本范围内。
+\subsection{结果展示}
+图\ref{fig:dependency_analysis}展示分析结果：左侧饼图反映项目依赖构成（直接依赖 vs 传递依赖），右侧直方图统计不同风险等级漏洞数量。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{dependency_analysis.png}
-    \caption{项目依赖结构分析与漏洞统计}
+    \caption{项目依赖构成与安全漏洞分析}
     \label{fig:dependency_analysis}
 \end{figure}
 
-\section{静态代码漏洞扫描 (SAST)}
+\section{代码漏洞扫描 (SAST)}
 
-静态应用程序安全测试 (SAST) 是在代码编写阶段发现安全缺陷的有效手段。\texttt{vulnerability\_scanner.py} 模块基于 \texttt{Bandit} 引擎，对 Python 源码进行全量的 AST 模式匹配。
+为发现代码层面潜在安全隐患，项目集成\texttt{bandit}作为静态应用程序安全测试（SAST）工具。
 
-\subsection{扫描机制与规则集}
-扫描器不执行任何代码，而是将源代码解析为抽象语法树，并在节点上运行一系列预定义的检测插件（Plugins）。检测覆盖了多个高危风险点：\textbf{敏感信息泄露}检测代码中硬编码的密码、API Key、Token 等；\textbf{命令注入风险}扫描 \texttt{subprocess}, \texttt{os.system}, \texttt{exec}, \texttt{eval} 等危险函数的使用场景；\textbf{弱加密算法}检测是否使用了不安全的哈希算法（如 MD5, SHA1）；\textbf{Web 安全}则检查 Flask/Django 等框架的配置是否开启了 Debug 模式或绑定了 0.0.0.0。
+\subsection{扫描机制}
+\texttt{vulnerability\_scanner.py}模块封装\texttt{BanditManager}，不执行代码，仅将Python源码解析为AST，通过插件匹配已知漏洞模式：
+\begin{itemize}
+    \item 硬编码敏感信息（密码、API Key）
+    \item 弱加密算法（MD5、SHA1）使用
+    \item 危险函数调用（eval()、subprocess.Popen的Shell注入风险）
+    \item 不安全网络绑定（如绑定到0.0.0.0）
+\end{itemize}
 
-\subsection{SAST 引擎集成}
-为了适配 Bandit 的版本更新，扫描器实现了与 \texttt{BanditManager} 的深度集成：
-
-\begin{verbatim}
-class AdvancedVulnerabilityScanner:
-    def advanced_bandit_scan(self):
-        """执行深度AST静态扫描"""
-        # 初始化Bandit配置
-        b_config = BanditConfig()
-        b_mgr = BanditManager(b_config, agg_type="severity")
-
-        # 发现所有Python文件
-        py_files = self._discover_files()
-        
-        # 触发分析引擎
-        b_mgr.discover_files(py_files, None)
-        b_mgr.run_tests()
-        
-        # 获取结构化结果
-        results = b_mgr.get_issue_list()
-        
-        # 按严重性分级
-        categorized = {"high": [], "medium": [], "low": []}
-        for issue in results:
-            severity = str(issue.severity).lower()
-            categorized[severity].append({
-                "file": issue.fname,
-                "line": issue.lineno,
-                "issue": issue.text
-            })
-            
-        return categorized
-\end{verbatim}
-
-\subsection{风险评估报告}
-本次扫描共检出 \textbf{45 个潜在安全问题}。其中，\textbf{高风险 (High) 问题 5 个}，主要涉及潜在的命令注入风险或硬编码凭证，建议立即修复；\textbf{中风险 (Medium) 问题 6 个}，主要涉及弱加密算法的使用或不安全的临时文件创建；\textbf{低风险 (Low) 问题 34 个}，多为异常捕获范围过大或其他代码风格相关的安全建议。
-
-图 \ref{fig:vulnerability_viz} 直观展示了各类风险的分布，为了解项目的安全基线提供了数据支撑。
+\subsection{风险评估}
+扫描结果分为High、Medium、Low三个风险等级，图\ref{fig:vulnerability_viz}直观展示各类风险分布，为安全修复优先级提供数据支撑。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.8\textwidth]{vulnerability_visualization.png}
-    \caption{静态代码漏洞扫描结果分布 (按风险等级)}
+    \caption{Bandit静态漏洞扫描结果分布}
     \label{fig:vulnerability_viz}
+\end{figure}
+
+\section{代码质量与动态分析}
+
+工具还整合\texttt{pylint}进行代码风格检查，以及\texttt{pytest-cov}开展动态测试覆盖率分析：
+
+\begin{itemize}
+    \item \textbf{Pylint 质量分布}：图\ref{fig:pylint_viz}展示代码中规范（Convention）、重构（Refactor）、警告（Warning）、错误（Error）类问题占比
+    \item \textbf{动态测试覆盖率}：\texttt{analyze.py}模块运行项目单元测试，生成覆盖率报告（coverage\_report.txt），评估测试用例对代码逻辑的覆盖程度
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{comtool_viz_pylint.png}
+    \caption{Pylint代码质量问题分布}
+    \label{fig:pylint_viz}
 \end{figure}

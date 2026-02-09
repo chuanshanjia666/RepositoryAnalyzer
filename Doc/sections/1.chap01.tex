@@ -1,17 +1,16 @@
-\chapter{git仓库分析}
+\chapter{Git仓库分析}
 \label{chap01}
-\section{基于gitgraph的git提交历史可视化}
+\section{基于GitGraph的Git提交历史可视化}
 
-本分析工具包含一个 \texttt{html\_generator.py} 模块，用于生成 Git 提交历史的可视化报告。该模块通过读取 Git 仓库的提交日志（包含哈希值、作者、日期、提交信息及父提交关系），并将这些数据注入到 HTML 模板中。
+本分析工具内置\texttt{html\_generator.py}模块，用于生成Git提交历史可视化报告。该模块读取Git仓库提交日志（含哈希值、作者、日期、提交信息及父提交关系），并将结构化数据注入HTML模板，输出交互式可视化页面。
 
 \subsection{核心实现}
 
-\texttt{html\_generator.py} 的核心实现如下：
+\texttt{html\_generator.py}核心实现如下：
 
 \begin{verbatim}
 def generate_git_tree_html(commits, repo_url):
-    """生成Git提交历史的HTML可视化页面"""
-    # 准备提交数据
+    """生成Git提交历史HTML可视化页面"""
     commits_data = []
     for commit in commits:
         commit_info = {
@@ -24,46 +23,44 @@ def generate_git_tree_html(commits, repo_url):
         }
         commits_data.append(commit_info)
 
-    # 渲染HTML模板
+    # 渲染模板并保存文件
     html_content = render_template('git_tree_template.html',
                                  commits=commits_data,
                                  repo_url=repo_url)
-
-    # 保存HTML文件
+    
     with open('git_tree.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
 
     return 'git_tree.html'
 \end{verbatim}
 
-前端可视化采用了 \texttt{gitgraph.js} 开源库。该库能够以美观的图形方式展示 Git 的分支结构、合并历史以及提交节点。生成的 \texttt{git\_tree.html} 文件支持交互式浏览，用户可以直观地查看项目的演进路线、分支合并情况以及各开发者的提交记录。
+前端可视化采用\texttt{gitgraph.js}开源库，可直观展示Git分支结构、合并历史及提交节点。生成的\texttt{git\_tree.html}支持交互式浏览，用户可查看项目演进路线、分支合并情况及开发者提交记录。
 
-结果如图 \ref{fig:git_tree} 所示，展示了 COMTool 项目的 Git 提交历史。每个节点代表一次提交，节点之间的连线表示父子关系。不同颜色的节点可以区分不同的分支或标签，鼠标悬停在节点上会显示详细的提交信息。
+结果如图\ref{fig:git_tree}所示，展示了COMTool项目Git提交历史。每个节点代表一次提交，节点连线表示父子关系，不同颜色区分分支/标签，鼠标悬停可查看提交详情。
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{git_tree.png}
-    \caption{COMTool 项目的 Git 提交历史可视化}
+    \caption{COMTool项目Git提交历史可视化}
     \label{fig:git_tree}
 \end{figure}
 
-\section{多维度git仓库分析}
+\section{多维度Git仓库分析}
 
-本节详细介绍 \texttt{analyze.py} 模块所实现的多维度 Git 仓库分析功能。该模块旨在通过量化数据揭示项目的开发节奏、团队结构及代码演进规律。
+本节详细介绍\texttt{analyze.py}模块实现的多维度Git仓库分析功能，通过量化数据揭示项目开发节奏、团队结构及代码演进规律。
 
 \subsection{实现技术与工具}
 
-分析工具主要基于 Python 语言开发，核心利用了以下开源库：
+分析工具基于Python开发，核心依赖以下开源库：
 \begin{itemize}
-    \item \textbf{GitPython}：用于与本地 Git 仓库进行交互。通过 `git.Repo` 对象，工具能够遍历提交历史（`iter\_commits`），提取包括提交哈希、作者、时间戳、提交信息及文件变更统计（`commit.stats`）在内的元数据。
-    \item \textbf{Matplotlib}：作为主要的可视化引擎，用于绘制柱状图、折线图、饼图及直方图。工具针对中文字符进行了专门配置（如加载 `SimHei` 或 `Source Han Sans CN` 字体），确保生成的图表在各种系统环境中均能正确显示中文标签。
-    \item \textbf{Pandas}：用于高效的数据处理与分析，特别是在进行时间序列分析（如 PR 处理周期）时，利用 DataFrame 进行数据的聚合、重采样与统计。
-    \item \textbf{Collections (Counter)}：Python 内置的高效计数器，用于对作者提交次数、关键词频率等数据进行快速聚合。
+    \item \textbf{GitPython}：与本地Git仓库交互，遍历提交历史、提取提交哈希/作者/时间戳/文件变更统计等元数据
+    \item \textbf{Matplotlib}：可视化引擎，配置中文字体（SimHei/Source Han Sans CN）确保中文标签正常显示
+    \item \textbf{Pandas}：高效处理时间序列数据，支持数据聚合、重采样与统计分析
+    \item \textbf{Collections (Counter)}：快速统计作者提交次数、关键词频率等数据
 \end{itemize}
-
 
 \subsection{核心分析函数实现}
 
-\texttt{analyze.py} 中的关键分析函数包括：
+\texttt{analyze.py}关键分析函数如下：
 
 \begin{verbatim}
 def analyze_authors(commits):
@@ -72,7 +69,6 @@ def analyze_authors(commits):
     for commit in commits:
         author = commit.get('author', 'Unknown')
         author_count[author] += 1
-
     return author_count.most_common(10)
 
 def analyze_monthly_activity(commits):
@@ -83,7 +79,6 @@ def analyze_monthly_activity(commits):
         if date_str:
             month = date_str[:7]  # YYYY-MM
             monthly_data[month] += 1
-
     return dict(sorted(monthly_data.items()))
 
 def analyze_keywords(commits):
@@ -102,7 +97,6 @@ def analyze_keywords(commits):
         for category, words in keywords.items():
             if any(word in message for word in words):
                 keyword_count[category] += 1
-
     return dict(keyword_count)
 \end{verbatim}
 
@@ -110,69 +104,24 @@ def analyze_keywords(commits):
 
 \subsubsection{开发活跃度分析}
 
-开发活跃度是衡量项目生命周期的重要指标。工具从“宏观月度趋势”和“微观时段分布”两个层面进行了分析。
+开发活跃度是衡量项目生命周期的核心指标，工具从宏观月度趋势和微观时段分布两个维度分析。
 
 \textbf{月度活跃度趋势}：
-通过提取每条提交记录的日期并截取至月份（YYYY-MM），统计每月的提交总数。分析能够清晰地反映出项目的起步期、爆发期及平稳维护期，帮助识别特定的开发冲刺活动。
-
-\textbf{全天时段提交分布}：
-该分析通过提取提交时间的小时属性（0-23h），绘制了开发者的工作习惯图谱。这不仅能反映出主力团队的工作时区，还能揭示是否存在高强度的加班或夜间突击开发情况。
+提取提交日期并按月份统计提交量，可清晰反映项目起步期、爆发期及平稳维护期。
 
 \textbf{实现机制}：
 \begin{verbatim}
 def plot_monthly_activity(monthly_data, output_path):
-    # ...绘制月度折线图...
-    plt.plot(months, counts, marker='o', linewidth=2)
-    # ...
+    """绘制月度活跃度图表"""
+    plt.figure(figsize=(12, 6))
+    months = list(monthly_data.keys())
+    counts = list(monthly_data.values())
 
-def plot_hourly_activity(hourly_data, output_path):
-    # ...绘制小时柱状图...
-    plt.bar(hours, counts, color='skyblue', edgecolor='navy')
-    # ...
-\end{verbatim}
-
-\begin{figure}[htbp]
-    \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_monthly.png}
-        \caption{项目月度提交活跃度趋势}
-        \label{fig:monthly_activity}
-    \end{minipage}
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_hourly.png}
-        \caption{全天各时段提交频率分布}
-        \label{fig:hourly_activity}
-    \end{minipage}
-\end{figure}
-
-\subsubsection{贡献者画像分析}
-
-为了了解团队结构，工具对 Git 提交中的 `author` 字段进行了清洗和统计。
-
-\textbf{核心贡献者统计}：
-利用 `Counter` 统计各作者的提交次数，并截取前 10 名生成条形图（图 \ref{fig:author_stats}）。这有助于识别项目的"核心维护者"以及社区参与的广度。在多人协作项目中，通常遵循"二八定律"，即大部分代码由少数核心成员提交。
-
-\textbf{实现机制}：
-\begin{verbatim}
-def plot_author_contributions(author_data, output_path):
-    """绘制核心贡献者统计图"""
-    plt.figure(figsize=(10, 6))
-
-    authors = [item[0] for item in author_data]
-    counts = [item[1] for item in author_data]
-
-    bars = plt.barh(authors, counts, color='lightcoral', edgecolor='darkred')
-    plt.title('前 10 名作者提交贡献统计', fontsize=16, fontweight='bold')
-    plt.xlabel('提交数量', fontsize=12)
-    plt.ylabel('作者', fontsize=12)
-
-    # 添加数值标签
-    for i, (bar, count) in enumerate(zip(bars, counts)):
-        plt.text(bar.get_width() + max(counts)*0.01, bar.get_y() + bar.get_height()/2,
-                str(count), ha='left', va='center', fontsize=10)
-
+    plt.plot(months, counts, marker='o', linewidth=2, markersize=6)
+    plt.title('项目月度提交活跃度趋势', fontsize=16, fontweight='bold')
+    plt.xlabel('月份', fontsize=12)
+    plt.ylabel('提交数量', fontsize=12)
+    plt.xticks(rotation=45)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
@@ -182,177 +131,240 @@ def plot_author_contributions(author_data, output_path):
 
 \begin{figure}[htbp]
     \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_monthly.png}
+    \caption{项目月度提交活跃度趋势}
+    \label{fig:monthly_activity}
+\end{figure}
+
+\textbf{全天时段提交分布}：
+提取提交时间的小时属性，分析开发者工作习惯，反映主力团队工作时区及加班情况。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def analyze_hourly_distribution(commits):
+    """分析全天时段提交分布"""
+    hourly_count = Counter()
+    for commit in commits:
+        date_str = commit.get('date', '')
+        if date_str and len(date_str) > 13:
+            hour = int(date_str[11:13])
+            hourly_count[hour] += 1
+    
+    # 补全0-23小时数据
+    for hour in range(24):
+        hourly_count[hour] = hourly_count.get(hour, 0)
+    return dict(sorted(hourly_count.items()))
+
+def plot_hourly_activity(hourly_data, output_path):
+    """绘制全天时段提交分布图"""
+    plt.figure(figsize=(12, 6))
+    hours = list(hourly_data.keys())
+    counts = list(hourly_data.values())
+
+    plt.bar(hours, counts, color='skyblue', edgecolor='navy', alpha=0.7)
+    plt.title('全天各时段提交频率分布', fontsize=16, fontweight='bold')
+    plt.xlabel('小时 (24小时制)', fontsize=12)
+    plt.ylabel('提交数量', fontsize=12)
+    plt.xticks(range(0, 24))
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_hourly.png}
+    \caption{全天各时段提交频率分布}
+    \label{fig:hourly_activity}
+\end{figure}
+
+\subsubsection{贡献者画像分析}
+
+清洗并统计Git提交的author字段，识别核心维护者及社区参与度。
+
+\textbf{核心贡献者统计}：
+统计作者提交次数并生成前10名条形图，符合"二八定律"（少数核心成员贡献大部分代码）。
+
+\textbf{实现机制}：
+\begin{verbatim}
+def plot_author_contributions(author_data, output_path):
+    """绘制核心贡献者统计图"""
+    plt.figure(figsize=(10, 6))
+    authors = [item[0] for item in author_data]
+    counts = [item[1] for item in author_data]
+
+    bars = plt.barh(authors, counts, color='lightcoral', edgecolor='darkred')
+    plt.title('前10名作者提交贡献统计', fontsize=16, fontweight='bold')
+    plt.xlabel('提交数量', fontsize=12)
+    plt.ylabel('作者', fontsize=12)
+
+    # 添加数值标签
+    for bar, count in zip(bars, counts):
+        plt.text(bar.get_width() + max(counts)*0.01, 
+                bar.get_y() + bar.get_height()/2,
+                str(count), ha='left', va='center', fontsize=10)
+
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+\end{verbatim}
+
+\begin{figure}[htbp]
+    \centering
     \includegraphics[width=0.8\textwidth]{comtool_stats_authors.png}
-    \caption{前 10 名作者提交贡献统计}
+    \caption{前10名作者提交贡献统计}
     \label{fig:author_stats}
 \end{figure}
 
 \subsubsection{代码演进与质量分析}
 
-代码量的变化直接反映了软件的成长过程。
+代码量变化直观反映软件成长过程，工具从净行数演变和增删趋势两方面分析。
 
 \textbf{代码行数 (LOC) 演变}：
-通过累加每次提交的 `insertions`（新增行数）和 `deletions`（删除行数），计算出项目净代码行数的随时间变化的累计曲线。陡峭的上升通常对应新功能的引入，而平缓或下降则可能意味着重构或死代码清理。
-
-\textbf{代码增删趋势}：
-分别展示了新增和删除的波动情况。如果某一时间段内“删除”曲线显著升高，通常标志着重大的架构调整或技术债务偿还。
+累加每次提交的新增/删除行数，计算净行数累计曲线，陡峭上升对应新功能开发，平缓/下降对应重构或清理死代码。
 
 \textbf{实现机制}：
 \begin{verbatim}
 def analyze_loc_growth(commits):
-    # ...计算代码行数演变...
-    net_change = insertions - deletions
-    total_loc += net_change
-    # ...
+    """分析代码行数演变"""
+    loc_data = []
+    total_loc = 0
+    for commit in commits:
+        insertions = commit.get('stats', {}).get('insertions', 0)
+        deletions = commit.get('stats', {}).get('deletions', 0)
+        net_change = insertions - deletions
+        total_loc += net_change
+
+        loc_data.append({
+            'date': commit.get('date', ''),
+            'insertions': insertions,
+            'deletions': deletions,
+            'net_change': net_change,
+            'total_loc': total_loc
+        })
+    return loc_data
 
 def plot_loc_growth(loc_data, output_path):
-    # ...绘制趋势图...
+    """绘制代码行数演变图"""
+    plt.figure(figsize=(12, 6))
+    dates = [item['date'] for item in loc_data]
+    total_loc = [item['total_loc'] for item in loc_data]
+
     plt.plot(dates, total_loc, linewidth=2, color='green')
+    plt.title('代码库净行数演变趋势', fontsize=16, fontweight='bold')
+    plt.xlabel('时间', fontsize=12)
+    plt.ylabel('累计代码行数', fontsize=12)
+    plt.xticks(rotation=45)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
 \end{verbatim}
 
 \begin{figure}[htbp]
     \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_loc.png}
-        \caption{代码库净行数演变趋势}
-        \label{fig:loc_growth}
-    \end{minipage}
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_ins_del_trend.png}
-        \caption{代码新增与删除行数趋势对照}
-        \label{fig:ins_del_trend}
-    \end{minipage}
+    \includegraphics[width=0.8\textwidth]{comtool_stats_loc.png}
+    \caption{代码库净行数演变趋势}
+    \label{fig:loc_growth}
+\end{figure}
+
+此外，工具分析的\textbf{代码增删趋势}（图\ref{fig:ins_del_trend}）可展示新增/删除行数波动，删除行数显著升高通常标志架构调整或技术债务偿还。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{comtool_stats_ins_del_trend.png}
+    \caption{代码新增与删除行数趋势对照}
+    \label{fig:ins_del_trend}
 \end{figure}
 
 \subsubsection{提交行为语义分析}
 
-为了理解开发者的主要工作内容，工具对 Commit Message 进行了文本挖掘。
+对Commit Message进行文本挖掘，理解开发者核心工作内容。
 
 \textbf{关键词分布分析}：
-针对中文开发环境，工具定义了一组特定的关键词映射。通过对提交信息进行模式匹配，生成了关键词分布饼图。这一比例直观地展示了项目是处于快速功能迭代阶段还是稳定维护阶段。
-
-\textbf{修改热点分析}：
-通过统计每次提交中涉及的文件路径，工具识别出了修改频率最高的目录或模块。这些"热点"区域往往是业务逻辑最复杂、变更最频繁的部分，也是潜在 Bug 的高发区。
+针对中文开发场景定义关键词映射，通过模式匹配生成分布饼图，直观判断项目阶段（新增占比高=迭代期，修复占比高=维护期）。
 
 \textbf{实现机制}：
 \begin{verbatim}
 def plot_keywords_distribution(keyword_data, output_path):
-    # ...绘制关键词饼图...
-    plt.pie(sizes, labels=display_labels, autopct='%1.1f%%')
-    # ...
+    """绘制关键词分布饼图"""
+    plt.figure(figsize=(8, 8))
+    labels = list(keyword_data.keys())
+    sizes = list(keyword_data.values())
 
-def analyze_file_hotspots(commits):
-    # ...统计文件修改热点...
-    return file_count.most_common(10)
+    # 中文标签映射
+    label_map = {
+        'add': '新增/Add',
+        'fix': '修复/Fix',
+        'update': '更新/Update',
+        'refactor': '重构/Refactor',
+        'remove': '删除/Remove'
+    }
+    display_labels = [label_map.get(label, label) for label in labels]
 
-def plot_file_hotspots(hotspot_data, output_path):
-    # ...绘制热点条形图...
-    bars = plt.barh(directories, counts, color='lightblue')
+    colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ff99cc']
+    plt.pie(sizes, labels=display_labels, autopct='%1.1f%%', 
+            startangle=90, colors=colors)
+    plt.title('提交信息高频关键词分布', fontsize=16, fontweight='bold')
+    plt.axis('equal')
+
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
 \end{verbatim}
 
 \begin{figure}[htbp]
     \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_cn_keywords.png}
-        \caption{提交信息高频关键词分布}
-        \label{fig:keywords}
-    \end{minipage}
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_hotspots.png}
-        \caption{最常被修改的代码目录 (热点分析)}
-        \label{fig:hotspots}
-    \end{minipage}
+    \includegraphics[width=0.6\textwidth]{comtool_stats_cn_keywords.png}
+    \caption{提交信息高频关键词分布}
+    \label{fig:keywords}
 \end{figure}
 
-\subsubsection{项目迭代与协作模式分析}
-
-除了上述的基础分析外，工具还从周维度和合并行为两个层面深入剖析了项目的迭代节奏与团队协作模式。
-
-\textbf{每周开发与迭代节奏}：
-通过分析提交日期在周一至周日的分布情况（图 \ref{fig:dow_activity}），可以直观地展示团队的工作习惯。同时，统计项目历史上每一周的提交总数（图 \ref{fig:weekly_velocity}），能以细粒度反映冲刺开发期（Sprint）和休整期。
+\textbf{修改热点分析}：
+统计提交涉及的文件路径，识别修改频率最高的目录/模块，这些热点区域是业务核心且易出Bug，需重点关注。
 
 \textbf{实现机制}：
 \begin{verbatim}
-def analyze_day_of_week(commits):
-    """分析每周开发节奏"""
-    days = [datetime.strptime(c['date'], ...).weekday() for c in commits]
-    # ...
+def analyze_file_hotspots(commits):
+    """分析文件修改热点"""
+    file_count = Counter()
+    for commit in commits:
+        modified_files = commit.get('files', [])
+        for file_path in modified_files:
+            dir_path = os.path.dirname(file_path)
+            if dir_path:
+                file_count[dir_path] += 1
+    return file_count.most_common(10)
 
-def draw_weekly_velocity(commits):
-    """分析每周提交速度"""
-    # ...统计每周提交数并绘制...
-    plt.plot(w_labels, w_values, color='dodgerblue')
+def plot_file_hotspots(hotspot_data, output_path):
+    """绘制修改热点分析图"""
+    plt.figure(figsize=(10, 6))
+    directories = [item[0] for item in hotspot_data]
+    counts = [item[1] for item in hotspot_data]
+
+    bars = plt.barh(directories, counts, color='lightblue', edgecolor='navy')
+    plt.title('最常被修改的代码目录 (热点分析)', fontsize=16, fontweight='bold')
+    plt.xlabel('修改次数', fontsize=12)
+    plt.ylabel('目录路径', fontsize=12)
+
+    # 添加数值标签
+    for bar, count in zip(bars, counts):
+        plt.text(bar.get_width() + max(counts)*0.01, 
+                bar.get_y() + bar.get_height()/2,
+                str(count), ha='left', va='center', fontsize=10)
+
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
 \end{verbatim}
 
 \begin{figure}[htbp]
     \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_dow.png}
-        \caption{每周提交演变分布}
-        \label{fig:dow_activity}
-    \end{minipage}
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_weekly.png}
-        \caption{每周提交速度趋势}
-        \label{fig:weekly_velocity}
-    \end{minipage}
-\end{figure}
-
-\textbf{Merge与协作模式}：
-在多人协作项目中，分支合并（Merge）和 Pull Request 是主要的工作流。工具统计了合并提交与普通提交的比例（图 \ref{fig:merge_ratio}），以及每月的合并活动频率（图 \ref{fig:merge_activity}）。高比例的 Merge 提交通常意味着规范的分支管理策略（如 Git Flow）。
-
-\begin{figure}[htbp]
-    \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_merge_ratio.png}
-        \caption{合并提交与普通提交占比}
-        \label{fig:merge_ratio}
-    \end{minipage}
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_merges.png}
-        \caption{每月合并 (PR) 活动统计}
-        \label{fig:merge_activity}
-    \end{minipage}
-\end{figure}
-
-\textbf{版本发布时间轴}：
-通过分析 Git Tag，工具绘制了版本发布的时间轴（图 \ref{fig:release_timeline}），可视化了项目的里程碑节点。
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=1.0\textwidth]{comtool_stats_releases.png}
-    \caption{项目 Release (Tag) 发布时间轴}
-    \label{fig:release_timeline}
-\end{figure}
-
-\subsubsection{技术栈构成与提交粒度}
-
-\textbf{文件类型分布}：
-通过遍历所有历史提交中修改的文件后缀名，统计了项目最常修改的文件类型。这一数据反映了项目的核心技术栈以及文档或配置文件的维护频率。
-
-\textbf{单次提交粒度}：
-统计每次提交所修改的文件数量分布。由于“原子提交”（Atomic Commit）通常被提倡，该图表可以帮助评估团队的提交规范度——大多数提交应只修改少量文件。
-
-\begin{figure}[htbp]
-    \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_file_types.png}
-        \caption{最常修改的文件类型分布}
-        \label{fig:file_types}
-    \end{minipage}
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{comtool_stats_modify_file_count.png}
-        \caption{单次提交改动文件数量分布}
-        \label{fig:modify_count}
-    \end{minipage}
+    \includegraphics[width=0.8\textwidth]{comtool_stats_hotspots.png}
+    \caption{最常被修改的代码目录 (热点分析)}
+    \label{fig:hotspots}
 \end{figure}

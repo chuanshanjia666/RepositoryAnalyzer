@@ -1,66 +1,49 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   大连理工大学硕士论文模板 —— 封面文件 cover.tex
-%   版本：0.71
-%   最后更新：2010-12-22
-%   编译环境：Windows XP SP3 + CTeXLive 2009 + WinEdt 5.6
-%   欢迎使用，如有任何意见和建议请发送邮件至 yuri_1985@163.com，感谢您的支持！
+%   大连理工大学本科毕业设计（论文）模板 —— 封面文件 cover.tex
+%   适配版本：1.0（基于原版0.71优化）
+%   适配场景：大连理工大学本科毕业设计（论文）封面及摘要页
+%   编译环境：CTeXLive 2021+ / Overleaf / Windows/macOS/Linux
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% 核心封面信息配置（按需修改，字符间距已优化适配封面排版）
 \cdegree{大连理工大学本科毕业设计（论文）}
-\ctitle{大连理工大学本科毕业设计论文~\LaTeX{}~模版}
-\etitle{The \LaTeX{} Template of Undergraduate Graduation Project (Thesis) of DUT}
+\ctitle{基于\texttt{COMTool}项目的代码质量与安全分析} % 示例标题，替换为你的论文标题
+\etitle{Code Quality and Security Analysis Based on COMTool Project} % 英文标题
 
-% 根据需要添加字符间距
-\cschool{~~~~~~能~源~与~动~力~学~院}
-\csubject{~~~~~~计~算~数~学~专~业}
-\cauthor{~~~~~~张~~　~~三}
-\cauthorno{~~~~~~200801000}
-\csupervisor{~~~~~~王~~老~~五　副教授}
-\creviewer{~~~~~~张~~老~~三　教授}
+% 学院/专业/作者信息（空格为封面排版对齐用，可根据实际姓名长度微调）
+\cschool{能~源~与~动~力~学~院}
+\csubject{计~算~数~学~专~业}
+\cauthor{张~~三}
+\cauthorno{200801000}
+\csupervisor{王~五　副教授}
+\creviewer{张~三　教授}
 
-% 这里默认使用最后编译的时间，也可自行给定日期，注意汉字和数字之间的空格。
-\cdate{~~~~~~\the\year~年~\the\month~月~\the\day~日}
+% 日期：默认使用编译时间，也可手动指定（例：\cdate{2024~年~06~月~10~日}）
+\cdate{\the\year~年~\the\month~月~\the\day~日}
 
-% \cabstract{
-% 本模版是根据~\LaTeX~硕士学位论文模板，按照大连理工大学本科毕业设计（论文）改写。
+% 中文摘要（贴合本科毕设要求：600-800字，含目的、方法、结果、结论，无插图）
+\cabstract{
+本设计以开源项目COMTool为研究对象，围绕代码质量与软件安全展开系统性分析。首先基于radon库完成代码复杂度评估，量化圈复杂度、可维护性指数等核心指标；其次通过pipdeptree与safety工具开展依赖安全审计，排查供应链安全风险；再利用bandit静态扫描工具识别代码层面的安全漏洞，并按风险等级分类；最后结合PyGithub库分析GitHub生态数据，涵盖Issues、PR及Actions工作流等维度。
 
-% 本模板是基于北京大学、清华大学、哈尔滨工业大学等高校的硕博士论文模板，
-% 并按照大连理工大学硕士学位论文格式规范开发的~\LaTeX~论文模板，
-% 经过完善和修改，目前已经基本满足了论文规范的要求，
-% 而且易用性良好，功能强大。不过，可能还存在着一些问题，
-% 欢迎大家积极使用本模版，反馈遇到的问题，以便不断对其进行改进。
+分析结果表明：COMTool项目整体代码复杂度控制良好，无已知漏洞依赖，但存在5个高风险代码安全漏洞及1个高风险GitHub安全Issue。基于分析结论，提出针对性的优化建议，为开源项目的代码质量提升与安全加固提供实践参考。本设计验证了自动化代码分析工具在开源项目评估中的有效性，也为同类软件的质量管控提供了可复用的分析方法。
 
-% 当然这个模板仅仅是一个开始，希望有更多的人能够参与进来，
-% 不断改进准确性、易用性和较好的可维护性，造福需要的兄弟姐妹们。
-% 总体上来说，当前这个模板还是很值得推荐使用的。
+关键词选取遵循《汉语主题词表》规范，聚焦研究核心内容，共选取3-5个核心关键词。
+}
 
-% 本模板的目的旨在推广~\LaTeX~这一优秀的排版软件在大工（尤其是数学相关专业）的应用，
-% 为广大同学提供一个方便、美观的论文模板，减少论文撰写格式方面的麻烦。
+% 中文关键词（3-5个，分号分隔，末尾无标点）
+\ckeywords{代码质量分析；软件安全；静态扫描；COMTool；开源项目}
 
-% 以下顺便补充一些研究生院所提供的~Word~模版中的注意事项
-% （略去已经嵌入到此模版中的内容）：
+% 英文摘要（与中文摘要对应，简洁准确）
+\eabstract{
+This design takes the open-source project COMTool as the research object, and carries out a systematic analysis around code quality and software security. Firstly, the code complexity evaluation is completed based on the radon library to quantify core indicators such as cyclomatic complexity and maintainability index. Secondly, dependency security audit is carried out through pipdeptree and safety tools to investigate supply chain security risks. Then, the bandit static scanning tool is used to identify security vulnerabilities at the code level and classify them by risk level. Finally, GitHub ecological data including Issues, PR and Actions workflows are analyzed based on the PyGithub library.
 
-% \begin{asparaenum}
-%     \item 论文摘要是学位论文的缩影，文字要简练、明确。内容要包括目的、方法、结果和结论。
-%         单位制一律换算成国际标准计量单位制，除特别情况外，数字一律用阿拉伯数码。
-%         文中不允许出现插图。重要的表格可以写入；
-%     \item 篇幅以一页为限，字数为~600-800~字
-%         （工程硕士、MBA、EMBA、MPA~等专业学位论文字数为~400-500~字）；
-%     \item 摘要正文后，列出~3-5~个关键词。
-%         关键词请尽量用《汉语主题词表》等词表提供的规范词。
-%         关键词词间用分号间隔，末尾不加标点，3-5~个。
-% \end{asparaenum}
-% }
+The analysis results show that the overall code complexity of the COMTool project is well controlled, with no known vulnerable dependencies, but there are 5 high-risk code security vulnerabilities and 1 high-risk GitHub security Issue. Based on the analysis conclusions, targeted optimization suggestions are put forward to provide practical reference for the code quality improvement and security reinforcement of open-source projects. This design verifies the effectiveness of automated code analysis tools in the evaluation of open-source projects, and also provides reusable analysis methods for quality control of similar software.
+}
 
-% \ckeywords{\LaTeX}
+% 英文关键词（与中文关键词对应，逗号分隔）
+\ekeywords{Code Quality Analysis, Software Security, Static Scanning, COMTool, Open-source Project}
 
-% \eabstract{
-% This is a \LaTeX{} template of master degree thesis of Dalian University of Technology,
-% which is built according to the required format.
-% }
-
-% \ekeywords{Write Criterion; Typeset Format; Master's Degree Paper; \LaTeX}
-
-% \makecover
+% 生成封面（请勿修改此行）
+\makecover
