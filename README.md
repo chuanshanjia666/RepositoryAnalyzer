@@ -44,11 +44,7 @@ pip install -r requirements.txt
 ### 基本使用
 
 ```bash
-# 直接运行分析（分析默认的 COMTool 项目）
 python main.py
-
-# 或者指定自定义仓库
-python main.py --url https://github.com/your/project.git --path ./myrepo
 ```
 
 ### 配置选项
