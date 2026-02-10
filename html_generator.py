@@ -23,8 +23,8 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
             overflow: auto;
             min-height: 1200px;
         }}
-        h1 {{ 
-            color: #2c3e50; 
+        h1 {{
+            color: #2c3e50;
             text-align: center;
             margin-bottom: 30px;
             font-size: 2.2em;
@@ -35,7 +35,6 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
 <body>
     <h1>Git Repository History - {git_url}</h1>
     <div id="graph-container"></div>
-
     <script>
         const commitsData = {json.dumps(commits)};
         const container = document.getElementById("graph-container");
@@ -61,27 +60,22 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
                 }},
             }})
         }});
-
         const branches = {{}};
         const commitToBranch = {{}};
         const branchToLastCommit = new Map();
-
         const main = gitgraph.branch({{
             name: "main",
             style: {{ label: {{ display: true }} }}
         }});
         branches["main"] = main;
         branchToLastCommit.set(main, null);
-
         commitsData.forEach(c => {{
             let targetBranch;
             const firstParentHash = c.parents.length > 0 ? c.parents[0] : null;
-            
             if (!firstParentHash) {{
                 targetBranch = branches["main"];
             }} else {{
                 let parentBranch = commitToBranch[firstParentHash] || branches["main"];
-                
                 if (branchToLastCommit.get(parentBranch) === firstParentHash) {{
                     targetBranch = parentBranch;
                 }} else {{
@@ -91,7 +85,6 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
                     }});
                 }}
             }}
-
             c.refs.forEach(ref => {{
                 if (ref.startsWith('refs/heads/') || (ref.startsWith('origin/') && !ref.includes('HEAD'))) {{
                     const bName = ref.replace('refs/heads/', '').replace('origin/', '');
@@ -104,13 +97,11 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
                     targetBranch = branches[bName];
                 }}
             }});
-
             const commitOptions = {{
                 hash: c.hash,
                 subject: c.message,
                 author: `${{c.author}} <${{c.date}}>`
             }};
-
             if (c.parents.length > 1) {{
                 let mergedSomething = false;
                 for (let i = 1; i < c.parents.length; i++) {{
@@ -121,17 +112,15 @@ def generate_git_tree_html(commits, git_url, output_path="git_tree.html"):
                             commitOptions: commitOptions
                         }});
                         mergedSomething = true;
-                        break; 
+                        break;
                     }}
                 }}
-
                 if (mergedSomething) {{
                     commitToBranch[c.hashFull] = targetBranch;
                     branchToLastCommit.set(targetBranch, c.hashFull);
                     return;
                 }}
             }}
-
             targetBranch.commit(commitOptions);
             commitToBranch[c.hashFull] = targetBranch;
             branchToLastCommit.set(targetBranch, c.hashFull);

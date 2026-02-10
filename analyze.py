@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import subprocess
 from datetime import datetime
 from collections import Counter
-
-# 解决中文显示问题，兼容所有系统，标准配置
 plt.rcParams['font.sans-serif'] = ['Source Han Sans CN', 'Arial Unicode MS', 'SimHei', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -57,7 +55,7 @@ def draw_keyword_distribution(commits, output_dir="stats", prefix=""):
         else:
             keywords['其他'] += 1
     plt.figure(figsize=(8, 8))
-    plt.pie(keywords.values(), labels=keywords.keys(), autopct='%1.1f%%', 
+    plt.pie(keywords.values(), labels=keywords.keys(), autopct='%1.1f%%',
             colors=['#ff9999','#66b3ff','#99ff99','#ffcc99'])
     plt.title('提交信息关键词分布')
     path = get_save_path('stats_keywords.png', output_dir, prefix)
@@ -169,7 +167,7 @@ def draw_merge_ratio(commits, output_dir="stats", prefix=""):
     total = len(commits)
     merges = len(merge_commits)
     plt.figure(figsize=(8, 8))
-    plt.pie([merges, total-merges], labels=['合并提交 (Merge)', '普通提交 (Normal)'], 
+    plt.pie([merges, total-merges], labels=['合并提交 (Merge)', '普通提交 (Normal)'],
             autopct='%1.1f%%', colors=['#6c5ce7', '#a29bfe'])
     plt.title('合并提交与普通提交占比')
     path = get_save_path('stats_merge_ratio.png', output_dir, prefix)
@@ -254,7 +252,7 @@ def draw_release_timeline(repo, output_dir="stats", prefix=""):
     plt.scatter(tag_dates, [1] * len(tag_dates), color='red', s=100, zorder=3)
     for i, (date, name) in enumerate(zip(tag_dates, tag_names)):
         plt.vlines(date, 0, 1, colors='grey', linestyles='--', alpha=0.3)
-        plt.text(date, 1.05 if i % 2 == 0 else 0.9, name, 
+        plt.text(date, 1.05 if i % 2 == 0 else 0.9, name,
                  rotation=45, ha='right', fontsize=9, color='darkred')
     plt.title('项目 Release (Tag) 发布时间轴')
     plt.yticks([])
@@ -266,7 +264,6 @@ def draw_release_timeline(repo, output_dir="stats", prefix=""):
     plt.savefig(path)
     plt.close()
     print(f"已生成统计图: {path}")
-
 
 def draw_code_ins_del_trend(repo, commits, output_dir="stats", prefix=""):
     """
@@ -280,17 +277,14 @@ def draw_code_ins_del_trend(repo, commits, output_dir="stats", prefix=""):
     insertions_list = []
     deletions_list = []
     commit_dates = []
-    # 遍历提交记录，提取每行提交的增删行数
     for commit in repo.iter_commits('--all', max_count=len(commits), topo_order=True):
         stats = commit.stats.total
         insertions_list.append(stats['insertions'])
         deletions_list.append(stats['deletions'])
         commit_dates.append(datetime.fromtimestamp(commit.authored_date))
-    # 反转数据保证时间正序
     insertions_list = insertions_list[::-1]
     deletions_list = deletions_list[::-1]
     commit_dates = commit_dates[::-1]
-    
     plt.figure(figsize=(12, 6))
     plt.plot(commit_dates, insertions_list, marker='.', color='#2E8B57', label='新增代码行数', linewidth=1.5)
     plt.plot(commit_dates, deletions_list, marker='.', color='#DC143C', label='删除代码行数', linewidth=1.5)
@@ -315,7 +309,6 @@ def draw_cn_keyword_distribution(commits, output_dir="stats", prefix=""):
     :param output_dir: 输出目录
     :param prefix: 文件名前缀
     """
-    # 定义中文开发高频关键词，覆盖主流提交场景，无遗漏
     cn_keywords = {
         '新增/添加': 0,
         '修改/更新': 0,
@@ -323,7 +316,6 @@ def draw_cn_keyword_distribution(commits, output_dir="stats", prefix=""):
         '优化/重构': 0,
         '其他提交': 0
     }
-    # 遍历所有提交信息进行关键词匹配
     for commit_info in commits:
         msg = commit_info['message']
         if any(word in msg for word in ['新增', '添加']):
@@ -336,7 +328,6 @@ def draw_cn_keyword_distribution(commits, output_dir="stats", prefix=""):
             cn_keywords['优化/重构'] += 1
         else:
             cn_keywords['其他提交'] += 1
-    # 绘制饼图，配色美观，标注百分比
     plt.figure(figsize=(8, 8))
     plt.pie(cn_keywords.values(), labels=cn_keywords.keys(), autopct='%1.1f%%',
             colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'], startangle=90)
@@ -356,15 +347,11 @@ def draw_author_contribution_ratio(commits, output_dir="stats", prefix=""):
     """
     authors = [commit['author'] for commit in commits]
     author_counts = Counter(authors)
-    # 取提交量前8的核心贡献者，其余归为"其他贡献者"，保证图表简洁美观
     top_authors = author_counts.most_common(8)
     other_count = sum(author_counts.values()) - sum([count for _, count in top_authors])
-    
-    # 组装最终统计数据
     contribution_data = list(top_authors)
     if other_count > 0:
         contribution_data.append(('其他贡献者', other_count))
-    
     names, counts = zip(*contribution_data)
     plt.figure(figsize=(9, 9))
     plt.pie(counts, labels=names, autopct='%1.1f%%',
@@ -385,11 +372,9 @@ def draw_modify_file_count_distribution(repo, commits, output_dir="stats", prefi
     :param prefix: 文件名前缀
     """
     modify_file_counts = []
-    # 遍历提交记录，统计每次提交修改的文件数量
     for commit in repo.iter_commits('--all', max_count=len(commits), topo_order=True):
         file_count = len(commit.stats.files)
         modify_file_counts.append(file_count)
-    
     plt.figure(figsize=(11, 6))
     plt.hist(modify_file_counts, bins=15, color='#74B9FF', edgecolor='black', alpha=0.8)
     plt.title('单次提交-改动文件数量分布情况')
@@ -408,27 +393,18 @@ def analyze_static_code(repo_path, output_dir="reports", prefix=""):
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     print(f"正在对 {repo_path} 进行静态分析...")
-
-    # 1. Pylint (代码质量/风格)
     pylint_report = os.path.join(output_dir, f"{prefix}pylint_report.txt")
     print(f"运行 Pylint...")
     with open(pylint_report, "w") as f:
-        # 限制只分析 COMTool 核心目录，避免分析第三方库或测试过于耗时
         subprocess.run(["pylint", os.path.join(repo_path, "COMTool")], stdout=f, stderr=subprocess.STDOUT)
-
-    # 2. Bandit (安全审计)
     bandit_report = os.path.join(output_dir, f"{prefix}bandit_report.txt")
     print(f"运行 Bandit 安全扫描...")
     subprocess.run(["bandit", "-r", os.path.join(repo_path, "COMTool"), "-f", "txt", "-o", bandit_report])
-
-    # 3. Radon (复杂度分析)
     radon_report = os.path.join(output_dir, f"{prefix}radon_complexity.txt")
     print(f"运行 Radon 复杂度分析...")
     with open(radon_report, "w") as f:
         subprocess.run(["radon", "cc", "-s", os.path.join(repo_path, "COMTool")], stdout=f)
-
     print(f"静态分析报告已生成在: {output_dir}")
 
 def analyze_dynamic_code(repo_path, output_dir="reports", prefix=""):
@@ -437,37 +413,26 @@ def analyze_dynamic_code(repo_path, output_dir="reports", prefix=""):
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
     print(f"正在对 {repo_path} 进行动态分析...")
-
-    # 运行 pytest 并生成覆盖率报告
-    # 注意: COMTool 可能需要安装其自身的依赖才能运行测试
     coverage_data = os.path.join(output_dir, ".coverage")
     coverage_report = os.path.join(output_dir, f"{prefix}coverage_report.txt")
-    
-    # 尝试运行测试，即使失败也要获取部分覆盖率或错误信息
     env = os.environ.copy()
-    env["PYTHONPATH"] = repo_path # 确保能导入模块
-    
+    env["PYTHONPATH"] = repo_path
     print(f"运行 Pytest 与 Coverage...")
-    # 使用 pytest-cov 运行测试
     result = subprocess.run([
-        "pytest", 
+        "pytest",
         "--cov=" + os.path.join(repo_path, "COMTool"),
         "--cov-report=term-missing",
         repo_path
     ], capture_output=True, text=True, env=env)
-
     with open(coverage_report, "w") as f:
         f.write(result.stdout)
         if result.stderr:
             f.write("\n--- ERRORS ---\n")
             f.write(result.stderr)
-
     print(f"动态分析报告已生成在: {output_dir}")
 
 def run_all_analysis(repo, commits, output_dir="stats", prefix=""):
-    # 基础 Git 统计分析
     draw_author_stats(commits, output_dir, prefix)
     draw_monthly_activity(commits, output_dir, prefix)
     draw_keyword_distribution(commits, output_dir, prefix)
@@ -486,7 +451,5 @@ def run_all_analysis(repo, commits, output_dir="stats", prefix=""):
     draw_cn_keyword_distribution(commits, output_dir, prefix)
     draw_author_contribution_ratio(commits, output_dir, prefix)
     draw_modify_file_count_distribution(repo, commits, output_dir, prefix)
-    
-    # 新增：代码静态与动态分析
     analyze_static_code(repo.working_dir, output_dir, prefix)
     analyze_dynamic_code(repo.working_dir, output_dir, prefix)

@@ -2,8 +2,6 @@ import os
 import re
 import matplotlib.pyplot as plt
 from collections import Counter
-
-# Standard configuration for Chinese font support
 plt.rcParams['font.sans-serif'] = ['Source Han Sans CN', 'Arial Unicode MS', 'SimHei', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -13,7 +11,6 @@ def parse_pylint_report(file_path):
     counts = Counter()
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
-            # Match ": C0103:", ": W0613:", etc.
             match = re.search(r': ([CRWE])\d{4}:', line)
             if match:
                 counts[match.group(1)] += 1
@@ -31,7 +28,6 @@ def parse_radon_report(file_path):
             if line.startswith('/'):
                 current_file = os.path.basename(line)
             else:
-                # Match " - A (3)"
                 match = re.search(r' - ([A-F]) \((\d+)\)', line)
                 if match:
                     grade = match.group(1)
@@ -84,20 +80,14 @@ def draw_bandit_pie(severities, output_path):
     plt.close()
 
 def run_visualizations(report_dir, prefix="comtool_"):
-    # Pylint
     pylint_counts = parse_pylint_report(os.path.join(report_dir, f"{prefix}pylint_report.txt"))
     draw_pylint_pie(pylint_counts, os.path.join(report_dir, f"{prefix}viz_pylint.png"))
-    
-    # Radon
     radon_data = parse_radon_report(os.path.join(report_dir, f"{prefix}radon_complexity.txt"))
     if radon_data:
         grades, file_comp = radon_data
         draw_radon_bar(grades, os.path.join(report_dir, f"{prefix}viz_radon.png"))
-        
-    # Bandit
     bandit_severities = parse_bandit_report(os.path.join(report_dir, f"{prefix}bandit_report.txt"))
     draw_bandit_pie(bandit_severities, os.path.join(report_dir, f"{prefix}viz_bandit.png"))
-
 if __name__ == "__main__":
     run_visualizations("reports")
     print("分析报告可视化已完成")
