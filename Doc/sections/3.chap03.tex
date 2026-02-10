@@ -8,11 +8,7 @@
 代码复杂度是衡量软件可维护性的核心指标，本项目基于\texttt{radon}库，通过\texttt{AdvancedRadonAnalyzer}模块实现自动化复杂度计算与可视化分析。
 
 \subsection{分析方法与实现}
-模块遍历仓库中所有Python文件，基于抽象语法树（AST）计算以下核心指标：
-\begin{itemize}
-    \item \textbf{圈复杂度 (Cyclomatic Complexity, CC)}：统计代码线性独立路径数量衡量逻辑复杂性，通过\texttt{radon.complexity.cc\_visit}解析代码块，统计if/while/for等控制流结构
-    \item \textbf{可维护性指数 (Maintainability Index, MI)}：利用\texttt{radon.metrics.mi\_visit}计算0-100分综合评分，结合圈复杂度、代码行数、Halstead体积和注释比例
-\end{itemize}
+模块遍历仓库中所有Python文件，基于抽象语法树（AST）计算以下核心指标：圈复杂度（Cyclomatic Complexity, CC）用于统计代码线性独立路径数量衡量逻辑复杂性，通过\texttt{radon.complexity.cc\_visit}解析代码块，统计if/while/for等控制流结构；可维护性指数（Maintainability Index, MI）则利用\texttt{radon.metrics.mi\_visit}计算0-100分综合评分，结合圈复杂度、代码行数、Halstead体积和注释比例。
 
 \subsection{分析结果}
 分析覆盖COMTool项目47个文件（有效文件38个），图\ref{fig:radon_complexity}展示代码复杂度分布。结果显示项目整体复杂度控制良好，大部分模块圈复杂度处于合理范围，代码结构清晰，维护成本较低。
@@ -29,10 +25,7 @@
 针对软件开发中的"供应链安全"问题，\texttt{DependencyAnalyzer}模块基于\texttt{pipdeptree}和\texttt{safety}工具实现深度依赖分析。
 
 \subsection{分析维度}
-\begin{itemize}
-    \item \textbf{依赖树解析}：调用\texttt{pipdeptree --json}命令解析环境依赖关系，构建完整依赖树，识别直接依赖及隐蔽的传递依赖
-    \item \textbf{漏洞数据库比对}：集成\texttt{safety}工具，将依赖版本与CVE漏洞数据库比对，自动标记存在安全风险的包版本
-\end{itemize}
+依赖树解析通过调用pipdeptree --json命令解析环境依赖关系，构建完整依赖树，识别直接依赖及隐蔽的传递依赖；漏洞数据库比对则集成safety工具，将依赖版本与CVE漏洞数据库比对，自动标记存在安全风险的包版本。
 
 \subsection{核心实现}
 \texttt{DependencyAnalyzer}关键实现如下：
@@ -85,13 +78,7 @@ class DependencyAnalyzer:
 为发现代码层面潜在安全隐患，项目集成\texttt{bandit}作为静态应用程序安全测试（SAST）工具。
 
 \subsection{扫描机制}
-\texttt{AdvancedVulnerabilityScanner}模块封装\texttt{BanditManager}，不执行代码，仅将Python源码解析为AST，通过插件匹配已知漏洞模式：
-\begin{itemize}
-    \item 硬编码敏感信息（密码、API Key）
-    \item 弱加密算法（MD5、SHA1）使用
-    \item 危险函数调用（eval()、subprocess.Popen的Shell注入风险）
-    \item 不安全网络绑定（如绑定到0.0.0.0）
-\end{itemize}
+AdvancedVulnerabilityScanner模块封装BanditManager，不执行代码，仅将Python源码解析为AST，通过插件匹配已知漏洞模式，包括硬编码敏感信息（密码、API Key）、弱加密算法（MD5、SHA1）使用、危险函数调用（eval()、subprocess.Popen的Shell注入风险）以及不安全网络绑定（如绑定到0.0.0.0）。
 
 \subsection{实现机制}
 漏洞扫描核心实现如下：
@@ -142,12 +129,7 @@ class AdvancedVulnerabilityScanner:
 \end{verbatim}
 
 \subsection{风险评估}
-扫描结果按High、Medium、Low三个等级分类：
-\begin{itemize}
-    \item 高风险漏洞：5个
-    \item 中风险漏洞：6个
-    \item 低风险漏洞：34个
-\end{itemize}
+扫描结果按High、Medium、Low三个等级分类：高风险漏洞5个，中风险漏洞6个，低风险漏洞34个。
 
 图\ref{fig:vulnerability_viz}展示风险分布，漏洞主要集中在中低风险等级，高风险漏洞数量较少，为安全修复优先级提供明确数据支撑。
 
@@ -208,12 +190,7 @@ class GitHubIssueAnalyzer:
         }
 \end{verbatim}
 
-分析结果：
-\begin{itemize}
-    \item 总计获取issues：9个
-    \item 安全相关issues：1个
-    \item 风险等级分布：高风险1个，中/低风险0个
-\end{itemize}
+分析结果：总计获取issues 9个，其中安全相关issues 1个，风险等级分布为高风险1个，中/低风险0个。
 
 项目存在1个需重点关注的安全问题，建议开发团队优先处理该高风险issue。
 
@@ -272,15 +249,7 @@ def analyze_pr_repository(repo_full_name, days_threshold=7, github_token=None):
     }
 \end{verbatim}
 
-分析覆盖23个PR，核心指标如下：
-\begin{itemize}
-    \item 总PR数量：23个
-    \item 合并率：69.57\%
-    \item 拒绝率：21.74\%
-    \item 僵尸PR率：8.7\%
-    \item 平均审查时间：7.86小时
-    \item 平均评论数：1.65条
-\end{itemize}
+分析覆盖23个PR，核心指标如下：总PR数量23个，合并率69.57%，拒绝率21.74%，僵尸PR率8.7%，平均审查时间7.86小时，平均评论数1.65条。
 
 指标表明项目开发流程健康，PR合并率高、审查效率良好，僵尸PR率控制在较低水平。
 
@@ -350,12 +319,7 @@ class GitHubActionsAnalyzer:
         return risks
 \end{verbatim}
 
-分析结果：
-\begin{itemize}
-    \item 分析工作流数量：5个
-    \item 工作流运行记录：14次
-    \item 安全问题数量：0个
-\end{itemize}
+分析结果：分析工作流数量5个，工作流运行记录14次，安全问题数量0个。
 
 项目CI/CD安全性表现良好，\textbf{未发现Actions工作流安全问题}，自动化流程配置安全可靠。
 
@@ -368,14 +332,6 @@ class GitHubActionsAnalyzer:
 
 \section{综合评估}
 
-基于深度分析结果，COMTool项目代码质量整体表现良好：
-
-\begin{itemize}
-    \item \textbf{代码复杂度}：控制良好，维护成本较低
-    \item \textbf{依赖安全}：无已知漏洞依赖，供应链管理优秀
-    \item \textbf{代码安全}：存在部分中低风险漏洞，需重点关注5个高风险漏洞
-    \item \textbf{社区健康度}：PR合并率高，审查效率良好，开发流程健康
-    \item \textbf{CI/CD安全}：工作流配置安全，无已知安全问题
-\end{itemize}
+基于深度分析结果，COMTool项目代码质量整体表现良好：在代码复杂度方面控制良好，维护成本较低；在依赖安全方面无已知漏洞依赖，供应链管理优秀；在代码安全方面存在部分中低风险漏洞，需重点关注5个高风险漏洞；在社区健康度方面PR合并率高，审查效率良好，开发流程健康；在CI/CD安全方面工作流配置安全，无已知安全问题。
 
 建议开发团队重点处理Bandit扫描发现的高风险漏洞及GitHub安全issue，持续优化代码质量与安全性。

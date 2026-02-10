@@ -50,13 +50,7 @@ def generate_git_tree_html(commits, repo_url):
 
 \subsection{实现技术与工具}
 
-分析工具基于Python开发，核心依赖以下开源库：
-\begin{itemize}
-    \item \textbf{GitPython}：与本地Git仓库交互，遍历提交历史、提取提交哈希/作者/时间戳/文件变更统计等元数据
-    \item \textbf{Matplotlib}：可视化引擎，配置中文字体（SimHei/Source Han Sans CN）确保中文标签正常显示
-    \item \textbf{Pandas}：高效处理时间序列数据，支持数据聚合、重采样与统计分析
-    \item \textbf{Collections (Counter)}：快速统计作者提交次数、关键词频率等数据
-\end{itemize}
+分析工具基于Python开发，核心依赖以下开源库：GitPython用于与本地Git仓库交互，遍历提交历史、提取提交哈希/作者/时间戳/文件变更统计等元数据；Matplotlib作为可视化引擎，配置中文字体（SimHei/Source Han Sans CN）确保中文标签正常显示；Pandas用于高效处理时间序列数据，支持数据聚合、重采样与统计分析；Collections（Counter）则用于快速统计作者提交次数、关键词频率等数据。
 
 \subsection{核心分析函数实现}
 

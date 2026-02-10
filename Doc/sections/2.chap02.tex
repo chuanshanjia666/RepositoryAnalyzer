@@ -8,11 +8,7 @@
 代码复杂度是衡量软件可维护性的核心指标，本项目基于\texttt{radon}库，通过\texttt{AdvancedRadonAnalyzer}模块实现自动化复杂度计算与可视化分析。
 
 \subsection{分析方法与实现}
-模块遍历仓库中所有Python文件，基于抽象语法树（AST）计算以下核心指标：
-\begin{itemize}
-    \item \textbf{圈复杂度 (Cyclomatic Complexity, CC)}：统计代码线性独立路径数量衡量逻辑复杂性，通过\texttt{radon.complexity.cc\_visit}解析代码块，统计if/while/for等控制流结构
-    \item \textbf{可维护性指数 (Maintainability Index, MI)}：利用\texttt{radon.metrics.mi\_visit}计算0-100分的综合评分，结合圈复杂度、代码行数、Halstead体积和注释比例
-\end{itemize}
+模块遍历仓库中所有Python文件，基于抽象语法树（AST）计算以下核心指标：圈复杂度（Cyclomatic Complexity, CC）用于统计代码线性独立路径数量衡量逻辑复杂性，通过\texttt{radon.complexity.cc\_visit}解析代码块，统计if/while/for等控制流结构；可维护性指数（Maintainability Index, MI）则利用\texttt{radon.metrics.mi\_visit}计算0-100分的综合评分，结合圈复杂度、代码行数、Halstead体积和注释比例。
 
 \subsection{核心实现代码}
 \texttt{AdvancedRadonAnalyzer}类核心实现如下：
@@ -69,10 +65,7 @@ class AdvancedRadonAnalyzer:
 针对软件开发中的"供应链安全"问题，\texttt{dependency\_analyzer.py}模块基于\texttt{pipdeptree}和\texttt{safety}工具实现深度依赖分析。
 
 \subsection{分析维度}
-\begin{itemize}
-    \item \textbf{依赖树解析}：调用\texttt{pipdeptree --json}命令解析环境依赖关系，构建完整依赖树，识别直接依赖及隐蔽的传递依赖
-    \item \textbf{漏洞数据库比对}：集成\texttt{safety}工具，将依赖版本与CVE漏洞数据库比对，自动标记存在安全风险的包版本
-\end{itemize}
+依赖树解析通过调用pipdeptree --json命令解析环境依赖关系，构建完整依赖树，识别直接依赖及隐蔽的传递依赖；漏洞数据库比对则集成safety工具，将依赖版本与CVE漏洞数据库比对，自动标记存在安全风险的包版本。
 
 \subsection{结果展示}
 图\ref{fig:dependency_analysis}展示分析结果：左侧饼图反映项目依赖构成（直接依赖 vs 传递依赖），右侧直方图统计不同风险等级漏洞数量。
@@ -89,13 +82,7 @@ class AdvancedRadonAnalyzer:
 为发现代码层面潜在安全隐患，项目集成\texttt{bandit}作为静态应用程序安全测试（SAST）工具。
 
 \subsection{扫描机制}
-\texttt{vulnerability\_scanner.py}模块封装\texttt{BanditManager}，不执行代码，仅将Python源码解析为AST，通过插件匹配已知漏洞模式：
-\begin{itemize}
-    \item 硬编码敏感信息（密码、API Key）
-    \item 弱加密算法（MD5、SHA1）使用
-    \item 危险函数调用（eval()、subprocess.Popen的Shell注入风险）
-    \item 不安全网络绑定（如绑定到0.0.0.0）
-\end{itemize}
+\texttt{vulnerability\_scanner.py}模块封装BanditManager，不执行代码，仅将Python源码解析为AST，通过插件匹配已知漏洞模式，包括硬编码敏感信息（密码、API Key）、弱加密算法（MD5、SHA1）使用、危险函数调用（eval()、subprocess.Popen的Shell注入风险）以及不安全网络绑定（如绑定到0.0.0.0）。
 
 \subsection{风险评估}
 扫描结果分为High、Medium、Low三个风险等级，图\ref{fig:vulnerability_viz}直观展示各类风险分布，为安全修复优先级提供数据支撑。
@@ -109,12 +96,7 @@ class AdvancedRadonAnalyzer:
 
 \section{代码质量与动态分析}
 
-工具还整合\texttt{pylint}进行代码风格检查，以及\texttt{pytest-cov}开展动态测试覆盖率分析：
-
-\begin{itemize}
-    \item \textbf{Pylint 质量分布}：图\ref{fig:pylint_viz}展示代码中规范（Convention）、重构（Refactor）、警告（Warning）、错误（Error）类问题占比
-    \item \textbf{动态测试覆盖率}：\texttt{analyze.py}模块运行项目单元测试，生成覆盖率报告（coverage\_report.txt），评估测试用例对代码逻辑的覆盖程度
-\end{itemize}
+工具还整合pylint进行代码风格检查，以及pytest-cov开展动态测试覆盖率分析：Pylint质量分布通过图\ref{fig:pylint_viz}展示代码中规范（Convention）、重构（Refactor）、警告（Warning）、错误（Error）类问题占比；动态测试覆盖率则由analyze.py模块运行项目单元测试，生成覆盖率报告（\texttt{coverage\_report.txt}），评估测试用例对代码逻辑的覆盖程度。
 
 \begin{figure}[htbp]
     \centering

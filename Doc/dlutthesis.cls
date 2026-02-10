@@ -149,6 +149,7 @@
     \newcommand\fixedunderlineleft[2][1cm]{\underline{\hb@xt@ #1{#2\hss}}}
     \newcommand\fixedunderlinecenter[2][1cm]{\underline{\hb@xt@ #1{\hss#2\hss}}}
     \newcommand\fixedunderlineright[2][1cm]{\underline{\hb@xt@ #1{\hss#2}}}
+    \newcommand\fixedunderlinemultiline[2][1cm]{\underline{\parbox[t]{#1}{\raggedright#2}}}
 \makeatother
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -399,7 +400,7 @@
                          \vspace{0.18cm}
                         ~ & 学 \hfill 生 \hfill 姓 \hfill 名：& \fixedunderlineleft[6.08cm]{\@cauthor} & \\
                         \vspace{0.18cm}
-                        ~ & 学 \hfill 号：& \fixedunderlineleft[6.08cm]{\@cauthorno} & \\
+                        ~ & 学 \hfill 号：& \fixedunderlinemultiline[6.08cm]{\@cauthorno} & \\
                         \vspace{0.18cm}
                         ~ & 指 \hfill 导 \hfill 教 \hfill 师：& \fixedunderlineleft[6.08cm]{\@csupervisor} & \\
                         \vspace{0.18cm}

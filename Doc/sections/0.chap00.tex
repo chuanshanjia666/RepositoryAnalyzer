@@ -6,11 +6,7 @@
 
 本项目设计并实现了一款多维度开源Python仓库分析器，专门针对COMTool项目开展分析工作。该分析器从三个核心维度对软件仓库进行全面剖析：
 
-\begin{itemize}
-    \item \textbf{Git仓库分析}：通过解析提交历史、开发者贡献、代码演进等数据，梳理项目开发轨迹与团队结构特征
-    \item \textbf{代码静态/动态分析}：整合多款工具完成代码复杂度评估、依赖安全审计、漏洞扫描及测试覆盖率分析
-    \item \textbf{GitHub仓库分析}：基于GitHub API深度分析PR协作流程、Issue追踪机制与Actions CI/CD工作流
-\end{itemize}
+该分析器从三个核心维度对软件仓库进行全面剖析：在Git仓库分析方面，通过解析提交历史、开发者贡献、代码演进等数据，梳理项目开发轨迹与团队结构特征；在代码静态/动态分析方面，整合多款工具完成代码复杂度评估、依赖安全审计、漏洞扫描及测试覆盖率分析；在GitHub仓库分析方面，基于GitHub API深度分析PR协作流程、Issue追踪机制与Actions CI/CD工作流。
 
 \section{系统架构与实现}
 
@@ -39,38 +35,19 @@ def main():
 
 \subsection{Git分析模块}
 实现多维度Git仓库分析功能：
-\begin{itemize}
-    \item 提交历史可视化（基于gitgraph.js）
-    \item 开发者活跃度统计
-    \item 代码演进趋势分析
-    \item 关键词语义分析
-\end{itemize}
+实现提交历史可视化（基于gitgraph.js）、开发者活跃度统计、代码演进趋势分析以及关键词语义分析等功能。
 
 \subsection{代码质量分析模块}
 集成多款主流静态分析工具：
-\begin{itemize}
-    \item \textbf{Radon}：代码复杂度分析
-    \item \textbf{Bandit}：安全漏洞扫描
-    \item \textbf{Pylint}：代码规范检查
-    \item \textbf{Safety}：依赖安全审计
-\end{itemize}
+集成Radon进行代码复杂度分析、Bandit进行安全漏洞扫描、Pylint进行代码规范检查以及Safety进行依赖安全审计。
 
 \subsection{GitHub生态分析模块}
 基于PyGithub库实现以下功能：
-\begin{itemize}
-    \item PR协作效率分析
-    \item Issue安全风险评估
-    \item Actions工作流安全检测
-\end{itemize}
+实现PR协作效率分析、Issue安全风险评估以及Actions工作流安全检测。
 
 \section{技术特点}
 
-\begin{itemize}
-    \item \textbf{自动化程度高}：覆盖从数据收集到报告生成的全流程自动化处理
-    \item \textbf{可视化丰富}：提供多类型图表与交互式展示形式
-    \item \textbf{模块化设计}：具备良好的扩展性与定制性
-    \item \textbf{跨平台兼容}：适配Windows、macOS、Linux等主流操作系统
-\end{itemize}
+具有高自动化程度，覆盖从数据收集到报告生成的全流程自动化处理；提供丰富的可视化展示，包括多类型图表与交互式展示形式；采用模块化设计，具备良好的扩展性与定制性；同时具备跨平台兼容性，适配Windows、macOS、Linux等主流操作系统。
 
 本次分析旨在为COMTool项目提供全面的质量评估，识别潜在问题点，并为后续代码优化与安全加固工作提供数据支撑。
 
